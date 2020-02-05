@@ -1,0 +1,279 @@
+---
+title: "crsp to ibes data processing"
+output: html_notebook
+---
+
+```{r}
+library(RPostgres)
+wrds <- dbConnect(Postgres(),
+                  host='wrds-pgdata.wharton.upenn.edu',
+                  port=9737,
+                  dbname='wrds',
+                  sslmode='require',
+                  user='echoi98')
+library(fuzzywuzzyR)
+library(tidyverse)
+library(dbplyr)
+library(reticulate)
+library(magrittr)
+```
+CRSP Pull
+```{r}
+# hexcd 1 = NYSE, hexcd 2 = AMEX, hexcd 3 = NASDAQ 
+res <- dbSendQuery(wrds, "select date,permno, cusip,prc, ret, vol, shrout ,hexcd, cfacpr from crspa.msf
+                   where date between '1980-01-01'
+                   and '2018-12-31'")
+crsp_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+
+col_order <- c("year", "month", "permno","cusip", "price","monthly_returns","volume","shares_outstanding","market_capitalization","exchange")
+
+# Omit all rows with incomplete data
+crsp_data_v1<-na.omit(crsp_data)
+# Adjust Price by price adjustment factor 
+crsp_data_v1$prc <- abs(crsp_data_v1$prc)/crsp_data_v1$cfacpr
+crsp_data_v1$market_capitalization <- crsp_data_v1$prc* crsp_data_v1$shrout
+# Filter the effect of penny stocks, so anything with price <=1 as defined by George
+crsp_data_v1 <- crsp_data_v1 %>% filter(prc>1)
+# Rename columns 
+crsp_data_v1<- rename(crsp_data_v1, price= prc, monthly_returns=ret, volume = vol, shares_outstanding = shrout, exchange = hexcd)
+crsp_data_v1$year <- format(crsp_data_v1$date,"%Y")
+crsp_data_v1$month <- format(crsp_data_v1$date,"%m")
+crsp_data_v1 <- crsp_data_v1[,col_order]
+# Save the crsp side of things to a csv file for reference
+write.csv(crsp_data_v1,'raw_crsp_1980_2018_data.csv')
+# Get a list of all the unique cusips in this dataset so we can use it to help cut down the size of our database to increase processing time 
+crsp_data_cusip <- subset(crsp_data_v1, select = c('cusip'))
+base_cusips <- unique(crsp_data_cusip)
+```
+Simple view
+```{r}
+crsp_data_v1
+```
+
+IBES US Pull
+```{r}
+res <- dbSendQuery(wrds, "select fpi,anndats,fpedats, cusip, oftic, analys, value from ibes.det_epsus
+                   where fpedats between '1980-01-01' and '2019-12-31'
+                   and cusip !='' and (fpi = '1' or fpi = '2')")
+ibes_pull_us<- dbFetch(res, n=-1)
+dbClearResult(res)
+# Filter out all the cusips we dont need b/c they are not in the crsp database
+ibes_pull_us<- inner_join(ibes_pull_us,base_cusips,by = c("cusip"="cusip"))
+
+# Find the 12th month 
+ibes_pull_us$forecast_end_period_month <- format(ibes_pull_us$fpedats,"%m")
+ibes_pull_us<- ibes_pull_us%>%filter(str_detect(forecast_end_period_month,"12"))
+ibes_pull_us
+```
+IBES Int Pull
+```{r}
+res <- dbSendQuery(wrds, "select fpi,anndats,fpedats, cusip, oftic, analys, value from ibes.det_epsint
+                   where fpedats between '1980-01-01' and '2019-12-31'
+                   and cusip !='' and (fpi = '1' or fpi = '2')")
+ibes_pull_int<- dbFetch(res, n=-1)
+dbClearResult(res)
+
+# Filter out all the cusips we dont need b/c they are not in the crsp database
+ibes_pull_int<- inner_join(ibes_pull_int,base_cusips,by = c("cusip"="cusip"))
+
+# Find the 12th month 
+ibes_pull_int$forecast_end_period_month <- format(ibes_pull_int$fpedats,"%m")
+ibes_pull_int<- ibes_pull_int%>%filter(str_detect(forecast_end_period_month,"12"))
+ibes_pull_int
+```
+Processing IBES together
+```{r}
+# Bind both us and int ibes pulls together
+ibes<- rbind(ibes_pull_us,ibes_pull_int)
+# Month where the analyst forecasted
+ibes$month_of_analyst_forecast <- format(ibes$anndats,"%m")
+# Year where the analyst forecasted
+ibes$year_of_analyst_forecast <- format(ibes$anndats,"%Y")
+# The Year in which the forecast was for 
+ibes$forecast_period_end_year <- format(ibes$fpedats,"%Y")
+# Count the number of analyst predictions per month 
+ibes <- ibes %>% group_by(cusip,year_of_analyst_forecast,month_of_analyst_forecast,forecast_period_end_year) %>% mutate (number_of_analyst_predictions = n_distinct(anndats,analys))
+ibes <- ibes %>% filter(number_of_analyst_predictions >=3)
+# get the month/year of the analyst_forecast
+ibes$month_and_year_of_analyst_forecast <- format(ibes$anndats,"%m-%Y")
+# group the data into (company, forecast end period) and ensure that there are at least 20 months of data
+ibes <- ibes %>% group_by(cusip,forecast_period_end_year) %>% mutate (number_of_months_per_forecast_period_end = n_distinct(month_and_year_of_analyst_forecast))
+ibes <-ibes %>% filter(number_of_months_per_forecast_period_end >=20)
+ibes
+```
+Check to make sure we have (t+1) jan data, and then june (t-1) to dec (t-1)
+```{r}
+ibes$month_of_analyst_forecast <- as.numeric(ibes$month_of_analyst_forecast)
+ibes$year_of_analyst_forecast <- as.numeric(ibes$year_of_analyst_forecast)
+ibes$forecast_period_end_year <- as.numeric(ibes$forecast_period_end_year)
+
+ibes_fpi_one<-ibes %>% filter(fpi=='1')
+ibes_fpi_two<-ibes %>% filter(fpi=='2')
+
+# Go through all IBES FPI=1 
+for(row in 1:nrow(ibes_fpi_one)){
+  analyst_predict_year<-ibes_fpi_one[row,'year_of_analyst_forecast']
+  forecast_end_year<- ibes_fpi_one[row,'forecast_period_end_year']
+  if(forecast_end_year==(analyst_predict_year-1)){
+    ibes_fpi_one[row,'t_minus_one']='true'
+  }
+  if(forecast_end_year==(analyst_predict_year)){
+    ibes_fpi_one[row,'t']='true'
+  }
+  if(forecast_end_year==(analyst_predict_year+1)){
+    ibes_fpi_one[row,'t_plus_one']='true'
+  }
+  if (mod(row,1000)==0){
+    print(row)
+  }
+}
+
+# Go through all of IBES FPI==2
+for(row in 1:nrow(ibes_fpi_two)){
+  analyst_predict_year<-ibes_fpi_two[row,'year_of_analyst_forecast']
+  forecast_end_year<- ibes_fpi_two[row,'forecast_period_end_year']
+  if(forecast_end_year==(analyst_predict_year-1)){
+    ibes_fpi_two[row,'t_minus_one']='true'
+  }
+  if(forecast_end_year==(analyst_predict_year)){
+    ibes_fpi_two[row,'t']='true'
+  }
+   if(forecast_end_year==(analyst_predict_year+1)){
+    ibes_fpi_two[row,'t_plus_one']='true'
+  }
+  if (mod(row,1000)==0){
+    print(row)
+  }
+}
+ibes_fpi_one
+ibes_fpi_two
+```
+Save files
+```{r}
+write.csv(ibes_fpi_one,"ibes_fpi_one.csv")
+write.csv(ibes_fpi_two,"ibes_fpi_two.csv")
+```
+Merge only the t-1 together and t+1 together 
+```{r}
+# Ibes fpi = t indicates that it was for that calendar year
+ibes_fpi_one_t<-ibes_fpi_one %>% filter(t=='true')
+ibes_fpi_two_t<-ibes_fpi_two %>% filter(t=='true')
+# IBES fpi = t-1 indicates it should be january 
+ibes_fpi_one_t_minus_one<-ibes_fpi_one %>% filter(t_minus_one=='true' & month_of_analyst_forecast==1)
+#there is no tminus one
+#ibes_fpi_two_t_minus_one<-ibes_fpi_two %>% filter(t_minus_one=='true' & month_of_analyst_forecast==1)
+# IBES fpi = t+1 indicates it should be from months June to december
+ibes_fpi_one_t_plus_one<-ibes_fpi_one %>% filter(t_plus_one=='true' & month_of_analyst_forecast>=6)
+ibes_fpi_two_t_plus_one<-ibes_fpi_two %>% filter(t_plus_one=='true' & month_of_analyst_forecast>=6)
+# Consolidate the t datas together
+ibes_t<-rbind(ibes_fpi_one_t, ibes_fpi_two_t)
+ibes_t_minus_one<-ibes_fpi_one_t_minus_one
+ibes_t_plus_one<-rbind(ibes_fpi_one_t_plus_one, ibes_fpi_two_t_plus_one)
+# Ensure that for each company for their perspective calendary year for t, they have 12 months of data
+ibes_t<- ibes_t %>% group_by(cusip,fpedats)%>% mutate(number_of_consecutive_months = n_distinct(month_and_year_of_analyst_forecast))
+ibes_t <- ibes_t %>% filter(number_of_consecutive_months==12)
+
+# Ensure that for each company for their perspective calendary year for t+1 they have 7 months of data 
+ibes_t_plus_one<- ibes_t_plus_one %>% group_by(cusip,fpedats)%>% mutate(number_of_consecutive_months = n_distinct(month_and_year_of_analyst_forecast))
+ibes_t_plus_one <- ibes_t_plus_one %>% filter(number_of_consecutive_months>=7)
+```
+Save these filtered files
+```{r}
+write.csv(ibes_t,"ibes_t.csv")
+write.csv(ibes_t_plus_one,"ibes_t_plus_one.csv")
+write.csv(ibes_t_minus_one,"ibes_t_minus_one.csv")
+```
+Show values
+```{r}
+ibes_t
+ibes_t_plus_one
+ibes_t_minus_one
+```
+Bind these file together
+```{r}
+IBES_DATABASE<-rbind(ibes_t,ibes_t_minus_one,ibes_t_plus_one)
+# Filter to makes sure that for any given year we have 20 months of data
+IBES_DATABASE<- IBES_DATABASE %>% group_by(cusip,fpedats)%>% mutate(total_consectutive_months = n_distinct(month_and_year_of_analyst_forecast))
+IBES_DATABASE <- IBES_DATABASE %>% filter(total_consectutive_months >=20)
+```
+Display the Database
+```{r}
+IBES_DATABASE <- arrange(IBES_DATABASE, cusip, anndats,fpedats)
+IBES_DATABASE
+```
+Save IBES Database
+```{r}
+write.csv(IBES_DATABASE, "IBES_DATABASE.csv")
+```
+Merge the IBES data with actuals 
+```{r}
+IBES_DATABASE<-read.csv("IBES_DATABASE.csv",header = TRUE)
+IBES_DATABASE
+```
+Call From WRDS Server
+```{r}
+# Get the IBES Actual Values from US
+res <- dbSendQuery(wrds, "select cusip, pends, value from ibes.act_epsus
+                   where pends between '1980-01-01' and '2018-12-31'
+                   and pdicity = 'ANN'
+                   and cusip !=''")
+ibes_actuals_us<- dbFetch(res, n=-1)
+dbClearResult(res)
+# Join the cusips so we remove any extra ones we do not need are removed
+ibes_actuals_us <- inner_join(ibes_actuals_us,crsp_data_cusip,by =c("cusip"="cusip"))
+ibes_actuals_us$period_end_month <- format(ibes_actuals_us$pends,"%m")
+ibes_actuals_us <- ibes_actuals_us %>% filter(str_detect('12'))
+# Get the IBES Actual Values from INT
+res <- dbSendQuery(wrds, "select cusip,pends, value from ibes.act_epsint
+                   where pends between '1980-01-01' and '2018-12-31'
+                   and pdicity = 'ANN'
+                   and cusip !=''")
+ibes_actuals_int<- dbFetch(res, n=-1)
+dbClearResult(res)
+ibes_actuals_int <- inner_join(ibes_actuals_int,crsp_data_cusip,by =c("cusip"="cusip"))
+ibes_actuals_int$period_end_month <- format(ibes_actuals_int$pends,"%m")
+ibes_actuals_int <- ibes_actuals_int %>% filter(str_detect('12'))
+```
+Parse the Results
+```{r}
+# Bind the two actuals together 
+ibes_actuals<-rbind(ibes_actuals_us, ibes_actuals_int)
+
+ibes_actuals<-rename(ibes_actuals, actual_annual_eps = value)
+# Now we should bind the two databases together so IBES DATABASE now contains actual data
+IBES_DATABASE<- inner_join(IBES_DATABASE,ibes_actuals, by = c("cusip"="cusip","fpedats"="pends" ))
+# Add Analyst Standard Deviation to each other 
+IBES_DATABASE<- IBES_DATABASE %>% group_by(cusip,month_and_year_of_analyst_forecast)%>% mutate(forecast_standard_deviation = sd(value))
+# Rename IBES_DATABASE value column to f_eps
+IBES_DATABASE<- rename(IBES_DATABASE, f_eps=value)
+# Get the S&P 500 returns data
+res <- dbSendQuery(wrds, "select caldt, sprtrn from crspa.msp500
+                   where caldt between '1980-01-01'
+                   and '2018-12-31'")
+benchmark_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+benchmark_data <- rename(benchmark_data,benchmark_returns=sprtrn)
+benchmark_data$year <- format(benchmark_data$caldt,"%Y")
+benchmark_data$month <- format(benchmark_data$caldt,"%m")
+# Merge the benchmark data with IBES_DATABASE
+IBES_DATABASE <- inner_join(IBES_DATABASE, benchmark_data, by = c('month_of_analyst_forecast'='month', 'year_of_analyst_forecast'='year'))
+# Join the CRSP Database with the IBES_DATABASE
+FULL_DATABASE <- inner_join(IBES_DATABASE,crsp_data_v1, by = c('cusip'='cusip','month_of_analyst_forecast'='month','year_of_analyst_forecast'='year'))
+# Calculate excess returns which is monthly stock return less the S&P 500 stock return
+FULL_DATABASE$excess_returns <-FULL_DATABASE$monthly_returns - FULL_DATABASE$benchmark_returns
+FULL_DATABASE<- rename(FULL_DATABASE,forecast_end_period = fpedats)
+# Get the columns we want
+col_order <- c("analyst_predict_year", "analyst_predict_month", "permno","cusip","ticker","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_estimates","forecast_end_period","analyst","f_eps","forecast_standard_deviation","market_capitalization","exchange")
+FULL_DATABASE<-FULL_DATABASE[,col_order]
+# Add average analyst forecast for each month
+FULL_DATABASE <- FULL_DATABASE%>%group_by(cusip, analyst_predict_year,analyst_predict_month,forecast_end_period)%>% mutate(average_forecasted_earnings = mean(f_eps))
+# Calculate the forecast standard deviation scaled by price 
+FULL_DATABASE$scaled_feps<-FULL_DATABASE$forecasted_standard_deviation/FULL_DATABASE$price
+# Save File 
+write.csv(FULL_DATABASE,"FULL_DATABASE.csv")
+FULL_DATABASE
+```
+
+
+
