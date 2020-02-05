@@ -239,7 +239,6 @@ Parse the Results
 ```{r}
 # Bind the two actuals together 
 ibes_actuals<-rbind(ibes_actuals_us, ibes_actuals_int)
-
 ibes_actuals<-rename(ibes_actuals, actual_annual_eps = value)
 # Now we should bind the two databases together so IBES DATABASE now contains actual data
 IBES_DATABASE<- inner_join(IBES_DATABASE,ibes_actuals, by = c("cusip"="cusip","fpedats"="pends" ))
@@ -273,6 +272,24 @@ FULL_DATABASE$scaled_feps<-FULL_DATABASE$forecasted_standard_deviation/FULL_DATA
 # Save File 
 write.csv(FULL_DATABASE,"FULL_DATABASE.csv")
 FULL_DATABASE
+```
+Begin to Quartile the Data
+```{r}
+# We want to segment the data by only the june values and if t-1, which means it is predict a year ahead
+june_full_database<- FULL_DATABASE %>% filter(analyst_predict_month ==6 & t_minus_one == 'true')
+# Take only one row per company/data
+june_full_database<- june_full_database %>% distinct(cusip,analyst_predict_month,.keep_all=TRUE)
+# Takes the quartile data of june 1st data by year  
+june_full_database<- june_full_database %>% group_by(analyst_predict_year)%>% mutate(quartile_feps = ntile(scaled_feps,4))
+june_full_database<- june_full_database %>% group_by(analyst_predict_year)%>% mutate(quartile_market_capitalization = ntile(market_capitalization,4))
+# Save only the columns we want to join to to the full database
+col_order <- c('cusip','forecast_end_period','quartile_feps','quartile_market_capitalization')
+june_full_database<- june_full_database[,col_order]
+# Match this back to our database 
+FULL_DATABASE <- inner_join(FULL_DATABASE,june_full_database,by=c('cusip'='cusip', 'forecast_end_period'='forecast_end_period'))
+# Get only the distinct rows (E.g. for each month )
+distinct_FULL_DATABASE<- FULL_DATABASE %>% distinct(cusip,analyst_predict_year,analyst_predict_month)
+write.csv(distinct_FULL_DATABASE,"distinct_FULL_DATABASE.csv")
 ```
 
 
