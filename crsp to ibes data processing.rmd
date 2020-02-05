@@ -289,7 +289,16 @@ june_full_database<- june_full_database[,col_order]
 FULL_DATABASE <- inner_join(FULL_DATABASE,june_full_database,by=c('cusip'='cusip', 'forecast_end_period'='forecast_end_period'))
 # Get only the distinct rows (E.g. for each month )
 distinct_FULL_DATABASE<- FULL_DATABASE %>% distinct(cusip,analyst_predict_year,analyst_predict_month)
+# Stats for George 
+full_database_from_1980_1996 <- FULL_DATABASE %>% filter(analyst_predict_year<=1996)
+full_database_from_1997_2018 <- FULL_DATABASE %>% filter(analyst_predict_year>=1997)
 write.csv(distinct_FULL_DATABASE,"distinct_FULL_DATABASE.csv")
+write.csv(full_database_from_1980_1996,"full_database_from_1980_1996.csv")
+write.csv(full_database_from_1997_2018,"full_database_from_1997_2018.csv")
+```
+Creation of the tables 
+```{r}
+
 ```
 
 
