@@ -1,0 +1,88 @@
+---
+title: "George Regression"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(dbplyr)
+library(dplyr)
+
+# Read in seperate databases  
+stock_database_1980_1996<-read.csv("full_dataset_from_1980_1996_quartiled.csv",header=TRUE)
+stock_database_1997_2018<-read.csv("full_dataset_from_1997_2018_quartiled.csv",header=TRUE)
+
+january_1980_1996_average <- stock_database_1980_1996 %>% filter(analyst_predict_month==1) %>% mutate (average_raw_monthly_return = mean(monthly_returns))
+january_1980_1996_average <- january_1980_1996_average %>% mutate (average_excess_monthly_return = mean(excess_returns))
+january_1980_1996_raw_average <- mean(january_1980_1996_average$average_raw_monthly_return)
+january_1980_1996_excess_average <- mean(january_1980_1996_average$average_excess_monthly_return)
+
+january_1997_2018_average <- stock_database_1997_2018 %>% filter(analyst_predict_month==1) %>% mutate (average_raw_monthly_return = mean(excess_returns))
+january_1997_2018_average <- january_1997_2018_average %>% mutate (average_excess_monthly_return = mean(excess_returns))
+january_1997_2018_raw_average <- mean(january_1997_2018_average$average_raw_monthly_return)
+january_1997_2018_excess_average <- mean(january_1997_2018_average$average_excess_monthly_return)
+
+stock_database_1980_1996$raw_adjusted_monthly_returns <- stock_database_1980_1996$monthly_returns - january_1980_1996_raw_average
+stock_database_1980_1996$excess_adjusted_monthly_returns <- stock_database_1980_1996$excess_returns - january_1980_1996_excess_average
+
+stock_database_1997_2018$raw_adjusted_monthly_returns <- stock_database_1997_2018$monthly_returns - january_1997_2018_raw_average 
+stock_database_1997_2018$excess_adjusted_monthly_returns <- stock_database_1997_2018$excess_returns - january_1997_2018_excess_average
+
+# Dummy vars
+stock_database_1980_1996<- stock_database_1980_1996 %>% mutate (february= ifelse(analyst_predict_month==2,1,0))
+stock_database_1980_1996<- stock_database_1980_1996 %>% mutate (march= ifelse(analyst_predict_month==3,1,0))
+stock_database_1980_1996<- stock_database_1980_1996 %>% mutate (april= ifelse(analyst_predict_month==4,1,0))
+stock_database_1980_1996<- stock_database_1980_1996 %>% mutate (may= ifelse(analyst_predict_month==5,1,0))
+stock_database_1980_1996<- stock_database_1980_1996 %>% mutate (june= ifelse(analyst_predict_month==6,1,0))
+stock_database_1980_1996<- stock_database_1980_1996 %>% mutate (july= ifelse(analyst_predict_month==7,1,0))
+stock_database_1980_1996<- stock_database_1980_1996 %>% mutate (august= ifelse(analyst_predict_month==8,1,0))
+stock_database_1980_1996<- stock_database_1980_1996 %>% mutate (september= ifelse(analyst_predict_month==9,1,0))
+stock_database_1980_1996<- stock_database_1980_1996 %>% mutate (october= ifelse(analyst_predict_month==10,1,0))
+stock_database_1980_1996<- stock_database_1980_1996 %>% mutate (november = ifelse(analyst_predict_month==11,1,0))
+stock_database_1980_1996<- stock_database_1980_1996 %>% mutate (december = ifelse(analyst_predict_month==12,1,0))
+
+stock_database_1997_2018<- stock_database_1997_2018 %>% mutate (february= ifelse(analyst_predict_month==2,1,0))
+stock_database_1997_2018<- stock_database_1997_2018 %>% mutate (march= ifelse(analyst_predict_month==3,1,0))
+stock_database_1997_2018<- stock_database_1997_2018 %>% mutate (april= ifelse(analyst_predict_month==4,1,0))
+stock_database_1997_2018<- stock_database_1997_2018 %>% mutate (may= ifelse(analyst_predict_month==5,1,0))
+stock_database_1997_2018<- stock_database_1997_2018 %>% mutate (june= ifelse(analyst_predict_month==6,1,0))
+stock_database_1997_2018<- stock_database_1997_2018 %>% mutate (july= ifelse(analyst_predict_month==7,1,0))
+stock_database_1997_2018<- stock_database_1997_2018 %>% mutate (august= ifelse(analyst_predict_month==8,1,0))
+stock_database_1997_2018<- stock_database_1997_2018 %>% mutate (september= ifelse(analyst_predict_month==9,1,0))
+stock_database_1997_2018<- stock_database_1997_2018 %>% mutate (october= ifelse(analyst_predict_month==10,1,0))
+stock_database_1997_2018<- stock_database_1997_2018 %>% mutate (november= ifelse(analyst_predict_month==11,1,0))
+stock_database_1997_2018<- stock_database_1997_2018 %>% mutate (december= ifelse(analyst_predict_month==12,1,0))
+
+stock_database_1980_1996
+stock_database_1997_2018
+```
+#run LM 
+```{r}
+raw_returns_1980_1996_model <- lm(monthly_returns ~ february + march + april + may + june + july + august + september + october + november  +december, data = stock_database_1980_1996)
+
+excess_returns_1980_1996_model <- lm(excess_returns ~ february + march + april + may + june + july + august + september + october + november  +december , data = stock_database_1980_1996)
+
+raw_returns_1997_2018_model <- lm(monthly_returns ~ february + march + april + may + june + july + august + september + october + november  +december, data = stock_database_1997_2018)
+
+excess_returns_1997_2018_model <- lm(excess_returns ~ february + march + april + may + june + july + august + september + october + november  +december, data = stock_database_1997_2018)
+
+summary(raw_returns_1980_1996_model)
+summary(excess_returns_1980_1996_model)
+summary(raw_returns_1997_2018_model)
+summary(excess_returns_1997_2018_model)
+```
+Extract the Coefficients 
+```{r}
+raw_returns_1980_1996_model_coeff<-summary(raw_returns_1980_1996_model)$coefficients
+excess_returns_1980_1996_model_coeff<-summary(raw_returns_1980_1996_model)$coefficients
+raw_returns_1997_2018_model_coeff<-summary(raw_returns_1980_1996_model)$coefficients
+excess_returns_1997_2018_model_coeff<-summary(raw_returns_1980_1996_model)$coefficients
+```
+Output
+```{r}
+raw_returns_1980_1996_model_coeff
+excess_returns_1980_1996_model_coeff
+raw_returns_1997_2018_model_coeff
+excess_returns_1997_2018_model_coeff
+```
+
