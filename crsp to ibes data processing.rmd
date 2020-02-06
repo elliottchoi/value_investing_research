@@ -11,7 +11,6 @@ wrds <- dbConnect(Postgres(),
                   dbname='wrds',
                   sslmode='require',
                   user='echoi98')
-library(fuzzywuzzyR)
 library(tidyverse)
 library(dbplyr)
 library(reticulate)
@@ -223,7 +222,7 @@ dbClearResult(res)
 # Join the cusips so we remove any extra ones we do not need are removed
 ibes_actuals_us <- inner_join(ibes_actuals_us,crsp_data_cusip,by =c("cusip"="cusip"))
 ibes_actuals_us$period_end_month <- format(ibes_actuals_us$pends,"%m")
-ibes_actuals_us <- ibes_actuals_us %>% filter(str_detect('12'))
+ibes_actuals_us <- ibes_actuals_us %>% filter(str_detect(period_end_month,'12'))
 # Get the IBES Actual Values from INT
 res <- dbSendQuery(wrds, "select cusip,pends, value from ibes.act_epsint
                    where pends between '1980-01-01' and '2018-12-31'
@@ -233,13 +232,15 @@ ibes_actuals_int<- dbFetch(res, n=-1)
 dbClearResult(res)
 ibes_actuals_int <- inner_join(ibes_actuals_int,crsp_data_cusip,by =c("cusip"="cusip"))
 ibes_actuals_int$period_end_month <- format(ibes_actuals_int$pends,"%m")
-ibes_actuals_int <- ibes_actuals_int %>% filter(str_detect('12'))
+ibes_actuals_int <- ibes_actuals_int %>% filter(str_detect(period_end_month,'12'))
 ```
 Parse the Results
 ```{r}
 # Bind the two actuals together 
 ibes_actuals<-rbind(ibes_actuals_us, ibes_actuals_int)
 ibes_actuals<-rename(ibes_actuals, actual_annual_eps = value)
+ibes_actuals$pends<-as.Date(ibes_actuals$pends) 
+IBES_DATABASE$fpedats<-as.Date(IBES_DATABASE$fpedats)
 # Now we should bind the two databases together so IBES DATABASE now contains actual data
 IBES_DATABASE<- inner_join(IBES_DATABASE,ibes_actuals, by = c("cusip"="cusip","fpedats"="pends" ))
 # Add Analyst Standard Deviation to each other 
