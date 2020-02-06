@@ -233,14 +233,30 @@ dbClearResult(res)
 ibes_actuals_int <- inner_join(ibes_actuals_int,crsp_data_cusip,by =c("cusip"="cusip"))
 ibes_actuals_int$period_end_month <- format(ibes_actuals_int$pends,"%m")
 ibes_actuals_int <- ibes_actuals_int %>% filter(str_detect(period_end_month,'12'))
-```
-Parse the Results
-```{r}
 # Bind the two actuals together 
 ibes_actuals<-rbind(ibes_actuals_us, ibes_actuals_int)
 ibes_actuals<-rename(ibes_actuals, actual_annual_eps = value)
-ibes_actuals$pends<-as.Date(ibes_actuals$pends) 
+ibes_actuals$period_end_month<-as.numeric(ibes_actuals$period_end_month) 
+ibes_actuals<-ibes_actuals%>%distinct(cusip,pends)
+```
+
+```{r}
+ibes_actuals
+IBES_DATABASE
+```
+
+Parse the Results
+```{r}
 IBES_DATABASE$fpedats<-as.Date(IBES_DATABASE$fpedats)
+
+# minimize headers we need for IBES
+col_for_IBES<- c('anndats','fpedats','cusip','oftic','analys','value','month_of_analyst_forecast','year_of_analyst_forecast','forecast_period_end_year','number_of_analyst_predictions','month_and_year_of_analyst_forecast','t','t_minus_one','t_plus_one')
+IBES_DATABASE<- IBES_DATABASE[,col_for_IBES]
+
+#Minimize headers for IBES_actuals
+col_for_IBES_actuals<-c('cusip','pends','actual_annual_eps')
+ibes_actuals<-ibes_actuals[,col_for_IBES_actuals]
+
 # Now we should bind the two databases together so IBES DATABASE now contains actual data
 IBES_DATABASE<- inner_join(IBES_DATABASE,ibes_actuals, by = c("cusip"="cusip","fpedats"="pends" ))
 # Add Analyst Standard Deviation to each other 
