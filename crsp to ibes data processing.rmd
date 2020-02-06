@@ -286,12 +286,12 @@ FULL_DATABASE <- inner_join(IBES_DATABASE,crsp_data_v1, by = c('cusip'='cusip','
 FULL_DATABASE$excess_returns <-FULL_DATABASE$monthly_returns - FULL_DATABASE$benchmark_returns
 FULL_DATABASE<- rename(FULL_DATABASE,forecast_end_period = fpedats)
 # Get the columns we want
-col_order <- c("year_of_analyst_forecast", "month_of_analyst_forecast", "permno","cusip","ticker","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_analyst_predictions","forecast_end_period","analys","f_eps","forecast_standard_deviation","market_capitalization","exchange")
+col_order <- c("year_of_analyst_forecast", "month_of_analyst_forecast", "permno","cusip","oftic","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_analyst_predictions","forecast_end_period","analys","f_eps","forecast_standard_deviation","market_capitalization","exchange")
 FULL_DATABASE<-FULL_DATABASE[,col_order]
 # Add average analyst forecast for each month
-FULL_DATABASE <- FULL_DATABASE%>%group_by(cusip, analyst_predict_year,analyst_predict_month,forecast_end_period)%>% mutate(average_forecasted_earnings = mean(f_eps))
+FULL_DATABASE <- FULL_DATABASE%>%group_by(cusip, year_of_analyst_forecast,month_of_analyst_forecast,forecast_end_period)%>% mutate(average_forecasted_earnings = mean(f_eps))
 # Calculate the forecast standard deviation scaled by price 
-FULL_DATABASE$scaled_feps<-FULL_DATABASE$forecasted_standard_deviation/FULL_DATABASE$price
+FULL_DATABASE$scaled_feps<-FULL_DATABASE$forecast_standard_deviation/FULL_DATABASE$price
 # Save File 
 write.csv(FULL_DATABASE,"FULL_DATABASE.csv")
 FULL_DATABASE
@@ -299,22 +299,22 @@ FULL_DATABASE
 Begin to Quartile the Data
 ```{r}
 # We want to segment the data by only the june values and if t-1, which means it is predict a year ahead
-june_full_database<- FULL_DATABASE %>% filter(analyst_predict_month ==6 & t_minus_one == 'true')
+june_full_database<- FULL_DATABASE %>% filter(month_of_analyst_forecast ==6 & t_minus_one == 'true')
 # Take only one row per company/data
-june_full_database<- june_full_database %>% distinct(cusip,analyst_predict_month,.keep_all=TRUE)
+june_full_database<- june_full_database %>% distinct(cusip,month_of_analyst_forecast,.keep_all=TRUE)
 # Takes the quartile data of june 1st data by year  
-june_full_database<- june_full_database %>% group_by(analyst_predict_year)%>% mutate(quartile_feps = ntile(scaled_feps,4))
-june_full_database<- june_full_database %>% group_by(analyst_predict_year)%>% mutate(quartile_market_capitalization = ntile(market_capitalization,4))
+june_full_database<- june_full_database %>% group_by(year_of_analyst_forecast)%>% mutate(quartile_feps = ntile(scaled_feps,4))
+june_full_database<- june_full_database %>% group_by(year_of_analyst_forecast)%>% mutate(quartile_market_capitalization = ntile(market_capitalization,4))
 # Save only the columns we want to join to to the full database
 col_order <- c('cusip','forecast_end_period','quartile_feps','quartile_market_capitalization')
 june_full_database<- june_full_database[,col_order]
 # Match this back to our database 
 FULL_DATABASE <- inner_join(FULL_DATABASE,june_full_database,by=c('cusip'='cusip', 'forecast_end_period'='forecast_end_period'))
 # Get only the distinct rows (E.g. for each month )
-distinct_FULL_DATABASE<- FULL_DATABASE %>% distinct(cusip,analyst_predict_year,analyst_predict_month)
+distinct_FULL_DATABASE<- FULL_DATABASE %>% distinct(cusip,year_of_analyst_forecast,month_of_analyst_forecast)
 # Stats for George 
-full_database_from_1980_1996 <- FULL_DATABASE %>% filter(analyst_predict_year<=1996)
-full_database_from_1997_2018 <- FULL_DATABASE %>% filter(analyst_predict_year>=1997)
+full_database_from_1980_1996 <- FULL_DATABASE %>% filter(year_of_analyst_forecast<=1996)
+full_database_from_1997_2018 <- FULL_DATABASE %>% filter(year_of_analyst_forecast>=1997)
 # Write the files for George 
 write.csv(distinct_FULL_DATABASE,"distinct_FULL_DATABASE.csv")
 write.csv(full_database_from_1980_1996,"full_database_from_1980_1996.csv")
@@ -322,10 +322,10 @@ write.csv(full_database_from_1997_2018,"full_database_from_1997_2018.csv")
 ```
 Creation of the dataset quartiled (using only distinct data)
 ```{r}
-distinct_quartiled_1980_1996 <- distinct_FULL_DATABASE %>% filter(analyst_predict_year<=1996)
-first_unique_month_june_stock_database_1980_1996_quartiled <- june_full_database %>% filter(analyst_predict_year<=1996)
-distinct_quartiled_1997_2018 <- distinct_FULL_DATABASE %>% filter(analyst_predict_year>=1997)
-first_unique_month_june_stock_database_1997_2018_quartiled <- june_full_database %>% filter(analyst_predict_year<=1996)
+distinct_quartiled_1980_1996 <- distinct_FULL_DATABASE %>% filter(year_of_analyst_forecast<=1996)
+first_unique_month_june_stock_database_1980_1996_quartiled <- june_full_database %>% filter(year_of_analyst_forecast<=1996)
+distinct_quartiled_1997_2018 <- distinct_FULL_DATABASE %>% filter(year_of_analyst_forecast>=1997)
+first_unique_month_june_stock_database_1997_2018_quartiled <- june_full_database %>% filter(year_of_analyst_forecast<=1996)
 
 ```
 
@@ -360,11 +360,11 @@ june_quartile_two <-first_unique_month_june_stock_database_1980_1996_quartiled %
 june_quartile_three <-first_unique_month_june_stock_database_1980_1996_quartiled %>% filter (quartile_market_capitalization ==3)
 june_quartile_four <-first_unique_month_june_stock_database_1980_1996_quartiled %>% filter (quartile_market_capitalization ==4)
 # Number of Analysts
-stock_database_1980_1996_quartiled_mc_table[1,1]<-mean(distinct_quartiled_1980_1996$analyst_predictions_over_period)
-stock_database_1980_1996_quartiled_mc_table[1,2]<-mean(quartile_one$analyst_predictions_over_period)
-stock_database_1980_1996_quartiled_mc_table[1,3]<-mean(quartile_two$analyst_predictions_over_period)
-stock_database_1980_1996_quartiled_mc_table[1,4]<-mean(quartile_three$analyst_predictions_over_period)
-stock_database_1980_1996_quartiled_mc_table[1,5]<-mean(quartile_four$analyst_predictions_over_period)
+stock_database_1980_1996_quartiled_mc_table[1,1]<-mean(distinct_quartiled_1980_1996$number_of_analyst_predictions)
+stock_database_1980_1996_quartiled_mc_table[1,2]<-mean(quartile_one$number_of_analyst_predictions)
+stock_database_1980_1996_quartiled_mc_table[1,3]<-mean(quartile_two$number_of_analyst_predictions)
+stock_database_1980_1996_quartiled_mc_table[1,4]<-mean(quartile_three$number_of_analyst_predictions)
+stock_database_1980_1996_quartiled_mc_table[1,5]<-mean(quartile_four$number_of_analyst_predictions)
 # forecasted_earnings
 stock_database_1980_1996_quartiled_mc_table[2,1]<-mean(distinct_quartiled_1980_1996$average_forecasted_earnings)
 stock_database_1980_1996_quartiled_mc_table[2,2]<-mean(quartile_one$average_forecasted_earnings)
@@ -406,11 +406,11 @@ june_quartile_two <-first_unique_month_june_stock_database_1980_1996_quartiled %
 june_quartile_three <-first_unique_month_june_stock_database_1980_1996_quartiled %>% filter (quartile_feps==3)
 june_quartile_four <-first_unique_month_june_stock_database_1980_1996_quartiled %>% filter (quartile_feps==4)
 # Number of Analysts
-stock_database_1980_1996_quartiled_feps_table[1,1]<-mean(distinct_quartiled_1980_1996$analyst_predictions_over_period)
-stock_database_1980_1996_quartiled_feps_table[1,2]<-mean(quartile_one$analyst_predictions_over_period)
-stock_database_1980_1996_quartiled_feps_table[1,3]<-mean(quartile_two$analyst_predictions_over_period)
-stock_database_1980_1996_quartiled_feps_table[1,4]<-mean(quartile_three$analyst_predictions_over_period)
-stock_database_1980_1996_quartiled_feps_table[1,5]<-mean(quartile_four$analyst_predictions_over_period)
+stock_database_1980_1996_quartiled_feps_table[1,1]<-mean(distinct_quartiled_1980_1996$number_of_analyst_predictions)
+stock_database_1980_1996_quartiled_feps_table[1,2]<-mean(quartile_one$number_of_analyst_predictions)
+stock_database_1980_1996_quartiled_feps_table[1,3]<-mean(quartile_two$number_of_analyst_predictions)
+stock_database_1980_1996_quartiled_feps_table[1,4]<-mean(quartile_three$number_of_analyst_predictions)
+stock_database_1980_1996_quartiled_feps_table[1,5]<-mean(quartile_four$number_of_analyst_predictions)
 # forecasted_earnings
 stock_database_1980_1996_quartiled_feps_table[2,1]<-mean(distinct_quartiled_1980_1996$average_forecasted_earnings)
 stock_database_1980_1996_quartiled_feps_table[2,2]<-mean(quartile_one$average_forecasted_earnings)
@@ -452,11 +452,11 @@ june_quartile_two <-first_unique_month_june_stock_database_1997_2018_quartiled %
 june_quartile_three <-first_unique_month_june_stock_database_1997_2018_quartiled %>% filter (quartile_feps==3)
 june_quartile_four <-first_unique_month_june_stock_database_1997_2018_quartiled %>% filter (quartile_feps==4)
 # Number of Analysts
-stock_database_1997_2018_quartiled_feps_table[1,1]<-mean(distinct_quartiled_1997_2018$analyst_predictions_over_period)
-stock_database_1997_2018_quartiled_feps_table[1,2]<-mean(quartile_one$analyst_predictions_over_period)
-stock_database_1997_2018_quartiled_feps_table[1,3]<-mean(quartile_two$analyst_predictions_over_period)
-stock_database_1997_2018_quartiled_feps_table[1,4]<-mean(quartile_three$analyst_predictions_over_period)
-stock_database_1997_2018_quartiled_feps_table[1,5]<-mean(quartile_four$analyst_predictions_over_period)
+stock_database_1997_2018_quartiled_feps_table[1,1]<-mean(distinct_quartiled_1997_2018$number_of_analyst_predictions)
+stock_database_1997_2018_quartiled_feps_table[1,2]<-mean(quartile_one$number_of_analyst_predictions)
+stock_database_1997_2018_quartiled_feps_table[1,3]<-mean(quartile_two$number_of_analyst_predictions)
+stock_database_1997_2018_quartiled_feps_table[1,4]<-mean(quartile_three$number_of_analyst_predictions)
+stock_database_1997_2018_quartiled_feps_table[1,5]<-mean(quartile_four$number_of_analyst_predictions)
 # forecasted_earnings
 stock_database_1997_2018_quartiled_feps_table[2,1]<-mean(distinct_quartiled_1997_2018$average_forecasted_earnings)
 stock_database_1997_2018_quartiled_feps_table[2,2]<-mean(quartile_one$average_forecasted_earnings)
@@ -498,11 +498,11 @@ june_quartile_two <-first_unique_month_june_stock_database_1997_2018_quartiled %
 june_quartile_three <-first_unique_month_june_stock_database_1997_2018_quartiled %>% filter (quartile_market_capitalization ==3)
 june_quartile_four <-first_unique_month_june_stock_database_1997_2018_quartiled %>% filter (quartile_market_capitalization ==4)
 # Number of Analysts
-stock_database_1997_2018_quartiled_mc_table[1,1]<-mean(distinct_quartiled_1997_2018$analyst_predictions_over_period)
-stock_database_1997_2018_quartiled_mc_table[1,2]<-mean(quartile_one$analyst_predictions_over_period)
-stock_database_1997_2018_quartiled_mc_table[1,3]<-mean(quartile_two$analyst_predictions_over_period)
-stock_database_1997_2018_quartiled_mc_table[1,4]<-mean(quartile_three$analyst_predictions_over_period)
-stock_database_1997_2018_quartiled_mc_table[1,5]<-mean(quartile_four$analyst_predictions_over_period)
+stock_database_1997_2018_quartiled_mc_table[1,1]<-mean(distinct_quartiled_1997_2018$number_of_analyst_predictions)
+stock_database_1997_2018_quartiled_mc_table[1,2]<-mean(quartile_one$number_of_analyst_predictions)
+stock_database_1997_2018_quartiled_mc_table[1,3]<-mean(quartile_two$number_of_analyst_predictions)
+stock_database_1997_2018_quartiled_mc_table[1,4]<-mean(quartile_three$number_of_analyst_predictions)
+stock_database_1997_2018_quartiled_mc_table[1,5]<-mean(quartile_four$number_of_analyst_predictions)
 # forecasted_earnings
 stock_database_1997_2018_quartiled_mc_table[2,1]<-mean(distinct_quartiled_1997_2018$average_forecasted_earnings)
 stock_database_1997_2018_quartiled_mc_table[2,2]<-mean(quartile_one$average_forecasted_earnings)
