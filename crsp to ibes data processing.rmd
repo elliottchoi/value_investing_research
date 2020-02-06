@@ -547,6 +547,7 @@ Begin Linear Regression
 distinct_FULL_DATABASE
 # Get Average January Raw Returns
 january_distinct_quartiled_data<-distinct_FULL_DATABASE%>%filter(month_of_analyst_forecast==1)
+
 january_distinct_quartiled_data<- january_distinct_quartiled_data%>%group_by(year_of_analyst_forecast)%>% mutate(average_raw_return=mean(monthly_returns),average_excess_returns=mean(excess_returns))
 january_distinct_quartiled_data
 ```
