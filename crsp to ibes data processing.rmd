@@ -286,7 +286,7 @@ FULL_DATABASE <- inner_join(IBES_DATABASE,crsp_data_v1, by = c('cusip'='cusip','
 FULL_DATABASE$excess_returns <-FULL_DATABASE$monthly_returns - FULL_DATABASE$benchmark_returns
 FULL_DATABASE<- rename(FULL_DATABASE,forecast_end_period = fpedats)
 # Get the columns we want
-col_order <- c("year_of_analyst_forecast", "month_of_analyst_forecast", "permno","cusip","oftic","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_analyst_predictions","forecast_end_period","analys","f_eps","forecast_standard_deviation","market_capitalization","exchange")
+col_order <- c("year_of_analyst_forecast", "month_of_analyst_forecast", "permno","cusip","oftic","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_analyst_predictions","forecast_end_period","analys","f_eps","forecast_standard_deviation","market_capitalization","exchange",'t','t_minus_one','t_plus_one')
 FULL_DATABASE<-FULL_DATABASE[,col_order]
 # Add average analyst forecast for each month
 FULL_DATABASE <- FULL_DATABASE%>%group_by(cusip, year_of_analyst_forecast,month_of_analyst_forecast,forecast_end_period)%>% mutate(average_forecasted_earnings = mean(f_eps))
