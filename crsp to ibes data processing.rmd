@@ -309,10 +309,10 @@ june_full_database<- june_full_database %>% distinct(cusip,month_of_analyst_fore
 june_full_database<- june_full_database %>% group_by(year_of_analyst_forecast)%>% mutate(quartile_feps = ntile(scaled_feps,4))
 june_full_database<- june_full_database %>% group_by(year_of_analyst_forecast)%>% mutate(quartile_market_capitalization = ntile(market_capitalization,4))
 # Save only the columns we want to join to to the full database
-col_order <- c('cusip','forecast_end_period','quartile_feps','quartile_market_capitalization','year_of_analyst_forecast')
+col_order <- c('cusip','forecast_end_period','quartile_feps','quartile_market_capitalization')
 june_full_database_mapping<- june_full_database[,col_order]
 # Match this back to our database 
-FULL_DATABASE_v01 <- inner_join(FULL_DATABASE,june_full_database_mapping,by=c('cusip'='cusip', 'forecast_end_period'='forecast_end_period','year_of_analyst_forecast'='year_of_analyst_forecast'))
+FULL_DATABASE_v01 <- inner_join(FULL_DATABASE,june_full_database_mapping,by=c('cusip'='cusip', 'forecast_end_period'='forecast_end_period'))
 # Get only the distinct rows (E.g. for each month )
 distinct_FULL_DATABASE<- FULL_DATABASE_v01 %>% distinct(cusip,year_of_analyst_forecast,month_of_analyst_forecast,.keep_all = TRUE)
 # Stats for George 
@@ -544,7 +544,11 @@ write.csv(stock_database_1997_2018_quartiled_feps_table,"stock_database_1997_201
 ```
 Begin Linear Regression 
 ```{r}
-
+distinct_FULL_DATABASE
+# Get Average January Raw Returns
+january_distinct_quartiled_data<-distinct_FULL_DATABASE%>%filter(month_of_analyst_forecast==1)
+january_distinct_quartiled_data<- january_distinct_quartiled_data%>%group_by(year_of_analyst_forecast)%>% mutate(average_raw_return=mean(monthly_returns),average_excess_returns=mean(excess_returns))
+january_distinct_quartiled_data
 ```
 
 
