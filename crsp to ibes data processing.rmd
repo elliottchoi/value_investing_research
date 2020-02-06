@@ -329,6 +329,8 @@ distinct_quartiled_1980_1996 <- distinct_FULL_DATABASE %>% filter(year_of_analys
 first_unique_month_june_stock_database_1980_1996_quartiled <- june_full_database %>% filter(year_of_analyst_forecast<=1996)
 distinct_quartiled_1997_2018 <- distinct_FULL_DATABASE %>% filter(year_of_analyst_forecast>=1997)
 first_unique_month_june_stock_database_1997_2018_quartiled <- june_full_database %>% filter(year_of_analyst_forecast<=1996)
+write.csv(first_unique_month_june_stock_database_1980_1996_quartiled,"first_unique_month_june_stock_database_1980_1996_quartiled.csv")
+write.csv(first_unique_month_june_stock_database_1997_2018_quartiled,"first_unique_month_june_stock_database_1997_2018_quartiled.csv")
 ```
 Creation of the tables 
 ```{r}
@@ -541,5 +543,8 @@ write.csv(stock_database_1980_1996_quartiled_feps_table,"stock_database_1980_199
 write.csv(stock_database_1997_2018_quartiled_feps_table,"stock_database_1997_2018_quartiled_feps_table.csv")
 ```
 Begin Linear Regression 
+```{r}
+
+```
 
 
