@@ -237,7 +237,7 @@ ibes_actuals_int <- ibes_actuals_int %>% filter(str_detect(period_end_month,'12'
 ibes_actuals<-rbind(ibes_actuals_us, ibes_actuals_int)
 ibes_actuals<-rename(ibes_actuals, actual_annual_eps = value)
 ibes_actuals$period_end_month<-as.numeric(ibes_actuals$period_end_month) 
-ibes_actuals<-ibes_actuals%>%distinct(cusip,pends)
+ibes_actuals<-ibes_actuals%>%distinct(cusip,pends,.keep_all = TRUE)
 ```
 
 ```{r}
