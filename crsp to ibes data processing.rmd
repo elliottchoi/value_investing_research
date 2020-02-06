@@ -248,6 +248,8 @@ IBES_DATABASE
 Parse the Results
 ```{r}
 IBES_DATABASE$fpedats<-as.Date(IBES_DATABASE$fpedats)
+crsp_data_v1$month<-as.numeric(crsp_data_v1$month)
+crsp_data_v1$year<-as.numeric(crsp_data_v1$year)
 
 # minimize headers we need for IBES
 col_for_IBES<- c('anndats','fpedats','cusip','oftic','analys','value','month_of_analyst_forecast','year_of_analyst_forecast','forecast_period_end_year','number_of_analyst_predictions','month_and_year_of_analyst_forecast','t','t_minus_one','t_plus_one')
@@ -269,9 +271,13 @@ res <- dbSendQuery(wrds, "select caldt, sprtrn from crspa.msp500
                    and '2018-12-31'")
 benchmark_data <- dbFetch(res, n=-1)
 dbClearResult(res)
+
 benchmark_data <- rename(benchmark_data,benchmark_returns=sprtrn)
 benchmark_data$year <- format(benchmark_data$caldt,"%Y")
 benchmark_data$month <- format(benchmark_data$caldt,"%m")
+# convert year and month to numeric to have joining 
+benchmark_data$year <- as.numeric(benchmark_data$year)
+benchmark_data$month <- as.numeric(benchmark_data$month)
 # Merge the benchmark data with IBES_DATABASE
 IBES_DATABASE <- inner_join(IBES_DATABASE, benchmark_data, by = c('month_of_analyst_forecast'='month', 'year_of_analyst_forecast'='year'))
 # Join the CRSP Database with the IBES_DATABASE
@@ -280,7 +286,7 @@ FULL_DATABASE <- inner_join(IBES_DATABASE,crsp_data_v1, by = c('cusip'='cusip','
 FULL_DATABASE$excess_returns <-FULL_DATABASE$monthly_returns - FULL_DATABASE$benchmark_returns
 FULL_DATABASE<- rename(FULL_DATABASE,forecast_end_period = fpedats)
 # Get the columns we want
-col_order <- c("analyst_predict_year", "analyst_predict_month", "permno","cusip","ticker","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_estimates","forecast_end_period","analyst","f_eps","forecast_standard_deviation","market_capitalization","exchange")
+col_order <- c("year_of_analyst_forecast", "month_of_analyst_forecast", "permno","cusip","ticker","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_analyst_predictions","forecast_end_period","analys","f_eps","forecast_standard_deviation","market_capitalization","exchange")
 FULL_DATABASE<-FULL_DATABASE[,col_order]
 # Add average analyst forecast for each month
 FULL_DATABASE <- FULL_DATABASE%>%group_by(cusip, analyst_predict_year,analyst_predict_month,forecast_end_period)%>% mutate(average_forecasted_earnings = mean(f_eps))
