@@ -744,6 +744,16 @@ summary(excess_returns_quartile_one_scaled_feps)
 summary(excess_returns_quartile_two_scaled_feps)
 summary(excess_returns_quartile_three_scaled_feps)
 summary(excess_returns_quartile_four_scaled_feps)
+```
+Get the Coefficients
+```{r}
+sig_vector<-c(0,0.001,0.01,0.05,0.1,1)
+sig_vector
+# Overall
+summary(raw_returns_full_database_1980_1996_regression_model)
+temp_coeff<-coef(raw_returns_full_database_1980_1996_regression_model)
+temp_t_stat<-summary(raw_returns_full_database_1980_1996_regression_model)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_full_database_1980_1996_regression_model)[["coefficients"]][, 4]
 
 ```
 
