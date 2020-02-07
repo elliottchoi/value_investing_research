@@ -15,6 +15,8 @@ library(tidyverse)
 library(dbplyr)
 library(reticulate)
 library(magrittr)
+library(caret)
+library(fastDummies)
 ```
 CRSP Pull
 ```{r}
@@ -544,12 +546,205 @@ write.csv(stock_database_1997_2018_quartiled_feps_table,"stock_database_1997_201
 ```
 Begin Linear Regression 
 ```{r}
-distinct_FULL_DATABASE
-# Get Average January Raw Returns
-january_distinct_quartiled_data<-distinct_FULL_DATABASE%>%filter(month_of_analyst_forecast==1)
+# LM for full dataset
+full_database_regression_data<-distinct_FULL_DATABASE
+distinct_quartiled_1980_1996_regression_data<-distinct_quartiled_1980_1996
+distinct_quartiled_1997_2018_regression_data<-distinct_quartiled_1997_2018
+# Convert Month to factor and make dummy vars 
+full_database_regression_data$month_of_analyst_forecast<-as.factor(full_database_regression_data$month_of_analyst_forecast)
+full_database_regression_data<-dummy_cols(full_database_regression_data)
+distinct_quartiled_1980_1996_regression_data$month_of_analyst_forecast<-as.factor(distinct_quartiled_1980_1996_regression_data$month_of_analyst_forecast)
+distinct_quartiled_1980_1996_regression_data<-dummy_cols(distinct_quartiled_1980_1996_regression_data)
+distinct_quartiled_1997_2018_regression_data$month_of_analyst_forecast<-as.factor(distinct_quartiled_1997_2018_regression_data$month_of_analyst_forecast)
+distinct_quartiled_1997_2018_regression_data<-dummy_cols(distinct_quartiled_1997_2018_regression_data)
+# Rename Dummy Var columns to months
+full_database_regression_data<-rename(full_database_regression_data,February=month_of_analyst_forecast_2,March=month_of_analyst_forecast_3,April=month_of_analyst_forecast_4,May=month_of_analyst_forecast_5,June=month_of_analyst_forecast_6,July=month_of_analyst_forecast_7,August=month_of_analyst_forecast_8,September=month_of_analyst_forecast_9,October=month_of_analyst_forecast_10,November=month_of_analyst_forecast_11,December=month_of_analyst_forecast_12)
+distinct_quartiled_1980_1996_regression_data<-rename(distinct_quartiled_1980_1996_regression_data,February=month_of_analyst_forecast_2,March=month_of_analyst_forecast_3,April=month_of_analyst_forecast_4,May=month_of_analyst_forecast_5,June=month_of_analyst_forecast_6,July=month_of_analyst_forecast_7,August=month_of_analyst_forecast_8,September=month_of_analyst_forecast_9,October=month_of_analyst_forecast_10,November=month_of_analyst_forecast_11,December=month_of_analyst_forecast_12)
+distinct_quartiled_1997_2018_regression_data<-rename(distinct_quartiled_1997_2018_regression_data,February=month_of_analyst_forecast_2,March=month_of_analyst_forecast_3,April=month_of_analyst_forecast_4,May=month_of_analyst_forecast_5,June=month_of_analyst_forecast_6,July=month_of_analyst_forecast_7,August=month_of_analyst_forecast_8,September=month_of_analyst_forecast_9,October=month_of_analyst_forecast_10,November=month_of_analyst_forecast_11,December=month_of_analyst_forecast_12)
+# Simplify to get columns we need
+col_names_for_regression<-c('monthly_returns','excess_returns','February','March','April','May','June','July','August','September','October','November','December','quartile_market_capitalization','quartile_feps')
+full_database_regression_data<-full_database_regression_data[,col_names_for_regression]
+distinct_quartiled_1980_1996_regression_data<-distinct_quartiled_1980_1996_regression_data[,col_names_for_regression]
+distinct_quartiled_1997_2018_regression_data<-distinct_quartiled_1997_2018_regression_data[,col_names_for_regression]
+# Run Regression on raw returns
+raw_returns_full_database_regression_model <- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = full_database_regression_data)
+raw_returns_full_database_1980_1996_regression_model<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = distinct_quartiled_1980_1996_regression_data)
+raw_returns_full_database_1997_2018_regression_model<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = distinct_quartiled_1997_2018_regression_data)
 
-january_distinct_quartiled_data<- january_distinct_quartiled_data%>%group_by(year_of_analyst_forecast)%>% mutate(average_raw_return=mean(monthly_returns),average_excess_returns=mean(excess_returns))
-january_distinct_quartiled_data
+# Run Regression on excess returns
+excess_returns_full_database_regression_model <- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = full_database_regression_data)
+excess_returns_full_database_1980_1996_regression_model<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = distinct_quartiled_1980_1996_regression_data)
+excess_returns_full_database_1997_2018_regression_model<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = distinct_quartiled_1997_2018_regression_data)
+
+# Run on Quartiled data for mc 1980_1996
+quartile_one <-distinct_quartiled_1980_1996_regression_data%>% filter(quartile_market_capitalization ==1)
+quartile_two<-distinct_quartiled_1980_1996_regression_data %>% filter (quartile_market_capitalization==2)
+quartile_three<-distinct_quartiled_1980_1996_regression_data %>% filter (quartile_market_capitalization==3)
+quartile_four<-distinct_quartiled_1980_1996_regression_data %>% filter (quartile_market_capitalization==4)
+# Raw Quartiles for MC 1980_1996 
+raw_returns_1980_1996_quartile_one_mc<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
+raw_returns_1980_1996_quartile_two_mc<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
+raw_returns_1980_1996_quartile_three_mc<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
+raw_returns_1980_1996_quartile_four_mc<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+# Excess Quartiles for MC 1980_1996 
+excess_returns_1980_1996_quartile_one_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
+excess_returns_1980_1996_quartile_two_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
+excess_returns_1980_1996_quartile_three_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
+excess_returns_1980_1996_quartile_four_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+
+# Run on Quartiled data for scaled_feps 1980_1996
+quartile_one <-distinct_quartiled_1980_1996_regression_data%>% filter(quartile_feps ==1)
+quartile_two<-distinct_quartiled_1980_1996_regression_data %>% filter (quartile_feps==2)
+quartile_three<-distinct_quartiled_1980_1996_regression_data %>% filter (quartile_feps==3)
+quartile_four<-distinct_quartiled_1980_1996_regression_data %>% filter (quartile_feps==4)
+# Raw Quartiles for MC 1980_1996 
+raw_returns_1980_1996_quartile_one_scaled_feps<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
+raw_returns_1980_1996_quartile_two_scaled_feps<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
+raw_returns_1980_1996_quartile_three_scaled_feps<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
+raw_returns_1980_1996_quartile_four_scaled_feps<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+# Excess Quartiles for MC 1980_1996 
+excess_returns_1980_1996_quartile_one_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
+excess_returns_1980_1996_quartile_two_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
+excess_returns_1980_1996_quartile_three_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
+excess_returns_1980_1996_quartile_four_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+
+# Run on Quartiled data for 1997_2018
+quartile_one <-distinct_quartiled_1997_2018_regression_data%>% filter(quartile_feps ==1)
+quartile_two<-distinct_quartiled_1997_2018_regression_data %>% filter (quartile_feps==2)
+quartile_three<-distinct_quartiled_1997_2018_regression_data %>% filter (quartile_feps==3)
+quartile_four<-distinct_quartiled_1997_2018_regression_data %>% filter (quartile_feps==4)
+# Raw Quartiles for scaled feps 1980_1996 
+raw_returns_1997_2018_quartile_one_scaled_feps<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
+raw_returns_1997_2018_quartile_two_scaled_feps<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
+raw_returns_1997_2018_quartile_three_scaled_feps<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
+raw_returns_1997_2018_quartile_four_scaled_feps<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+# Excess Quartiles for scaled feps 1980_1996 
+excess_returns_1997_2018_quartile_one_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
+excess_returns_1997_2018_quartile_two_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
+excess_returns_1997_2018_quartile_three_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
+excess_returns_1997_2018_quartile_four_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+
+# Run on Quartiled data for 1997_2018
+quartile_one <-distinct_quartiled_1997_2018_regression_data%>% filter(quartile_market_capitalization ==1)
+quartile_two<-distinct_quartiled_1997_2018_regression_data %>% filter (quartile_market_capitalization==2)
+quartile_three<-distinct_quartiled_1997_2018_regression_data %>% filter (quartile_market_capitalization==3)
+quartile_four<-distinct_quartiled_1997_2018_regression_data %>% filter (quartile_market_capitalization==4)
+# Raw Quartiles for MC 1980_1996 
+raw_returns_1997_2018_quartile_one_mc<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
+raw_returns_1997_2018_quartile_two_mc<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
+raw_returns_1997_2018_quartile_three_mc<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
+raw_returns_1997_2018_quartile_four_mc<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+# Excess Quartiles for MC 1980_1996 
+excess_returns_1997_2018_quartile_one_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
+excess_returns_1997_2018_quartile_two_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
+excess_returns_1997_2018_quartile_three_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
+excess_returns_1997_2018_quartile_four_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+
+# Run on Quartiled data for All Data
+quartile_one <-full_database_regression_data%>% filter(quartile_feps ==1)
+quartile_two<-full_database_regression_data %>% filter (quartile_feps==2)
+quartile_three<-full_database_regression_data %>% filter (quartile_feps==3)
+quartile_four<-full_database_regression_data %>% filter (quartile_feps==4)
+# Raw Quartiles for MC 1980_1996 
+raw_returns_quartile_one_scaled_feps<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
+raw_returns_quartile_two_scaled_feps<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
+raw_returns_quartile_three_scaled_feps<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
+raw_returns_quartile_four_scaled_feps<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+# Excess Quartiles for MC 1980_1996 
+excess_returns_quartile_one_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
+excess_returns_quartile_two_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
+excess_returns_quartile_three_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
+excess_returns_quartile_four_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+
+# Run on Quartiled data for All Data
+quartile_one <-full_database_regression_data%>% filter(quartile_market_capitalization ==1)
+quartile_two<-full_database_regression_data %>% filter (quartile_market_capitalization==2)
+quartile_three<-full_database_regression_data %>% filter (quartile_market_capitalization==3)
+quartile_four<-full_database_regression_data %>% filter (quartile_market_capitalization==4)
+# Raw Quartiles for MC 1980_1996 
+raw_returns_quartile_one_mc<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
+raw_returns_quartile_two_mc<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
+raw_returns_quartile_three_mc<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
+raw_returns_quartile_four_mc<- lm(raw_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+# Excess Quartiles for MC 1980_1996 
+excess_returns_quartile_one_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
+excess_returns_quartile_two_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
+excess_returns_quartile_three_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
+excess_returns_quartile_four_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+
+
+
+# Raw Return Regression on entire data set 
+summary(raw_returns_full_database_regression_model)
+summary(raw_returns_full_database_1980_1996_regression_model)
+summary(raw_returns_full_database_1997_2018_regression_model)
+# Excess Return Regression on entire data set 
+summary(excess_returns_full_database_regression_model)
+summary(excess_returns_full_database_1980_1996_regression_model)
+summary(excess_returns_full_database_1997_2018_regression_model)
+# Raw Return Regression from 1980_1996 by mc
+summary(raw_returns_1980_1996_quartile_one_mc)
+summary(raw_returns_1980_1996_quartile_two_mc)
+summary(raw_returns_1980_1996_quartile_three_mc)
+summary(raw_returns_1980_1996_quartile_four_mc)
+# Excess Return Regression from 1980_1996 by mc
+summary(excess_returns_1980_1996_quartile_one_mc)
+summary(excess_returns_1980_1996_quartile_two_mc)
+summary(excess_returns_1980_1996_quartile_three_mc)
+summary(excess_returns_1980_1996_quartile_four_mc)
+# Raw Return Regression from 1980_1996 by scaled_feps
+summary(raw_returns_1980_1996_quartile_one_scaled_feps)
+summary(raw_returns_1980_1996_quartile_two_scaled_feps)
+summary(raw_returns_1980_1996_quartile_three_scaled_feps)
+summary(raw_returns_1980_1996_quartile_four_mc)
+# Excess Return Regression from 1980_1996 by scaled_feps
+summary(excess_returns_1980_1996_quartile_one_scaled_feps)
+summary(excess_returns_1980_1996_quartile_two_scaled_feps)
+summary(excess_returns_1980_1996_quartile_three_scaled_feps)
+summary(excess_returns_1980_1996_quartile_four_scaled_feps)
+
+# Raw Return Regression from 1997_2018 by mc
+summary(raw_returns_1997_2018_quartile_one_mc)
+summary(raw_returns_1997_2018_quartile_two_mc)
+summary(raw_returns_1997_2018_quartile_three_mc)
+summary(raw_returns_1997_2018_quartile_four_mc)
+# Excess Return Regression from 1997_2018 by mc
+summary(excess_returns_1997_2018_quartile_one_mc)
+summary(excess_returns_1997_2018_quartile_two_mc)
+summary(excess_returns_1997_2018_quartile_three_mc)
+summary(excess_returns_1997_2018_quartile_four_mc)
+# Raw Return Regression from 1997_2018 by scaled feps
+summary(raw_returns_1997_2018_quartile_one_scaled_feps)
+summary(raw_returns_1997_2018_quartile_two_scaled_feps)
+summary(raw_returns_1997_2018_quartile_three_scaled_feps)
+summary(raw_returns_1997_2018_quartile_four_mc)
+# Excess Return Regression from 1997_2018 by scaled feps
+summary(excess_returns_1997_2018_quartile_one_scaled_feps)
+summary(excess_returns_1997_2018_quartile_two_scaled_feps)
+summary(excess_returns_1997_2018_quartile_three_scaled_feps)
+summary(excess_returns_1997_2018_quartile_four_scaled_feps)
+
+# Raw Return Regression for all by mc
+summary(raw_returns_quartile_one_mc)
+summary(raw_returns_quartile_two_mc)
+summary(raw_returns_quartile_three_mc)
+summary(raw_returns_quartile_four_mc)
+# Excess Return Regression for all by mc
+summary(excess_returns_quartile_one_mc)
+summary(excess_returns_quartile_two_mc)
+summary(excess_returns_quartile_three_mc)
+summary(excess_returns_quartile_four_mc)
+# Raw Return Regression for all by scaled feps
+summary(raw_returns_quartile_one_scaled_feps)
+summary(raw_returns_quartile_two_scaled_feps)
+summary(raw_returns_quartile_three_scaled_feps)
+summary(raw_returns_quartile_four_mc)
+# Excess Return Regression for all by scaled feps
+summary(excess_returns_quartile_one_scaled_feps)
+summary(excess_returns_quartile_two_scaled_feps)
+summary(excess_returns_quartile_three_scaled_feps)
+summary(excess_returns_quartile_four_scaled_feps)
+
 ```
 
 
