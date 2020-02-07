@@ -584,7 +584,7 @@ full_database_regression_data<-rename(full_database_regression_data,February=mon
 distinct_quartiled_1980_1996_regression_data<-rename(distinct_quartiled_1980_1996_regression_data,February=month_of_analyst_forecast_2,March=month_of_analyst_forecast_3,April=month_of_analyst_forecast_4,May=month_of_analyst_forecast_5,June=month_of_analyst_forecast_6,July=month_of_analyst_forecast_7,August=month_of_analyst_forecast_8,September=month_of_analyst_forecast_9,October=month_of_analyst_forecast_10,November=month_of_analyst_forecast_11,December=month_of_analyst_forecast_12)
 distinct_quartiled_1997_2018_regression_data<-rename(distinct_quartiled_1997_2018_regression_data,February=month_of_analyst_forecast_2,March=month_of_analyst_forecast_3,April=month_of_analyst_forecast_4,May=month_of_analyst_forecast_5,June=month_of_analyst_forecast_6,July=month_of_analyst_forecast_7,August=month_of_analyst_forecast_8,September=month_of_analyst_forecast_9,October=month_of_analyst_forecast_10,November=month_of_analyst_forecast_11,December=month_of_analyst_forecast_12)
 # Simplify to get columns we need
-col_names_for_regression<-c('monthly_returns','excess_returns','February','March','April','May','June','July','August','September','October','November','December','quartile_market_capitalization','quartile_feps')
+col_names_for_regression<-c('month_of_analyst_forecast','monthly_returns','excess_returns','February','March','April','May','June','July','August','September','October','November','December','quartile_market_capitalization','quartile_feps')
 full_database_regression_data<-full_database_regression_data[,col_names_for_regression]
 distinct_quartiled_1980_1996_regression_data<-distinct_quartiled_1980_1996_regression_data[,col_names_for_regression]
 distinct_quartiled_1997_2018_regression_data<-distinct_quartiled_1997_2018_regression_data[,col_names_for_regression]
@@ -615,15 +615,15 @@ excess_returns_1980_1996_quartile_two_mc<- lm(excess_returns ~ February + March 
 excess_returns_1980_1996_quartile_three_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
 excess_returns_1980_1996_quartile_four_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
 # Run Chi Squared Test for raw returns 1980_1996 by MC
-chi_squared_raw_returns_1980_1996_quartile_one_mc<-chisq.test(quartile_one$monthly_returns,quartile_one$February,quartile_one$March,quartile_one$April,quartile_one$May,quartile_one$June,quartile_one$July,quartile_one$August,quartile_one$September,quartile_one$October,quartile_one$November,quartile_one$December)
-chi_squared_raw_returns_1980_1996_quartile_two_mc<-chisq.test(quartile_two$monthly_returns,quartile_two$February,quartile_two$March,quartile_two$April,quartile_two$May,quartile_two$June,quartile_two$July,quartile_two$August,quartile_two$September,quartile_two$October,quartile_two$November,quartile_two$December)
-chi_squared_raw_returns_1980_1996_quartile_three_mc<-chisq.test(quartile_three$monthly_returns,quartile_three$February,quartile_three$March,quartile_three$April,quartile_three$May,quartile_three$June,quartile_three$July,quartile_three$August,quartile_three$September,quartile_three$October,quartile_three$November,quartile_three$December)
-chi_squared_raw_returns_1980_1996_quartile_four_mc<<-chisq.test(quartile_four$monthly_returns,quartile_four$February,quartile_four$March,quartile_four$April,quartile_four$May,quartile_four$June,quartile_four$July,quartile_four$August,quartile_four$September,quartile_four$October,quartile_four$November,quartile_four$December)
+chi_squared_raw_returns_1980_1996_quartile_one_mc<-chisq.test(quartile_one$monthly_returns,quartile_one$month_of_analyst_forecast)
+chi_squared_raw_returns_1980_1996_quartile_two_mc<-chisq.test(quartile_two$monthly_returns,quartile_two$month_of_analyst_forecast)
+chi_squared_raw_returns_1980_1996_quartile_three_mc<-chisq.test(quartile_three$monthly_returns,quartile_three$month_of_analyst_forecast)
+chi_squared_raw_returns_1980_1996_quartile_four_mc<<-chisq.test(quartile_four$monthly_returns,quartile_four$month_of_analyst_forecast)
 # Run Chi Squared Test for excess Returns by MC
-chi_squared_excess_returns_1980_1996_quartile_one_mc<-chisq.test(quartile_one$excess_returns,quartile_one$February,quartile_one$March,quartile_one$April,quartile_one$May,quartile_one$June,quartile_one$July,quartile_one$August,quartile_one$September,quartile_one$October,quartile_one$November,quartile_one$December)
-chi_squared_excess_returns_1980_1996_quartile_two_mc<-chisq.test(quartile_two$excess_returns,quartile_two$February,quartile_two$March,quartile_two$April,quartile_two$May,quartile_two$June,quartile_two$July,quartile_two$August,quartile_two$September,quartile_two$October,quartile_two$November,quartile_two$December)
-chi_squared_excess_returns_1980_1996_quartile_three_mc<-chisq.test(quartile_three$excess_returns,quartile_three$February,quartile_three$March,quartile_three$April,quartile_three$May,quartile_three$June,quartile_three$July,quartile_three$August,quartile_three$September,quartile_three$October,quartile_three$November,quartile_three$December)
-chi_squared_excess_returns_1980_1996_quartile_four_mc<-chisq.test(quartile_four$excess_returns,quartile_four$February,quartile_four$March,quartile_four$April,quartile_four$May,quartile_four$June,quartile_four$July,quartile_four$August,quartile_four$September,quartile_four$October,quartile_four$November,quartile_four$December)
+chi_squared_excess_returns_1980_1996_quartile_one_mc<-chisq.test(quartile_one$excess_returns,quartile_one$month_of_analyst_forecast)
+chi_squared_excess_returns_1980_1996_quartile_two_mc<-chisq.test(quartile_two$excess_returns,quartile_two$month_of_analyst_forecast)
+chi_squared_excess_returns_1980_1996_quartile_three_mc<-chisq.test(quartile_three$excess_returns,quartile_three$month_of_analyst_forecast)
+chi_squared_excess_returns_1980_1996_quartile_four_mc<-chisq.test(quartile_four$excess_returns,quartile_four$month_of_analyst_forecast)
 
 # Run on Quartiled data for scaled_feps 1980_1996
 quartile_one <-distinct_quartiled_1980_1996_regression_data%>% filter(quartile_feps ==1)
@@ -636,10 +636,10 @@ raw_returns_1980_1996_quartile_two_scaled_feps<- lm(monthly_returns ~ February +
 raw_returns_1980_1996_quartile_three_scaled_feps<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
 raw_returns_1980_1996_quartile_four_scaled_feps<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
 # Run Chi Squared Test for Raw Returns by Scaled FEPS_1980_1996
-chi_squared_raw_returns_1980_1996_quartile_one_scaled_feps<-chisq.test(quartile_one$monthly_returns,quartile_one$February,quartile_one$March,quartile_one$April,quartile_one$May,quartile_one$June,quartile_one$July,quartile_one$August,quartile_one$September,quartile_one$October,quartile_one$November,quartile_one$December)
-chi_squared_raw_returns_1980_1996_quartile_two_scaled_feps<-chisq.test(quartile_two$monthly_returns,quartile_two$February,quartile_two$March,quartile_two$April,quartile_two$May,quartile_two$June,quartile_two$July,quartile_two$August,quartile_two$September,quartile_two$October,quartile_two$November,quartile_two$December)
-chi_squared_raw_returns_1980_1996_quartile_three_scaled_feps<-chisq.test(quartile_three$monthly_returns,quartile_three$February,quartile_three$March,quartile_three$April,quartile_three$May,quartile_three$June,quartile_three$July,quartile_three$August,quartile_three$September,quartile_three$October,quartile_three$November,quartile_three$December)
-chi_squared_raw_returns_1980_1996_quartile_four_scaled_feps<-chisq.test(quartile_four$monthly_returns,quartile_four$February,quartile_four$March,quartile_four$April,quartile_four$May,quartile_four$June,quartile_four$July,quartile_four$August,quartile_four$September,quartile_four$October,quartile_four$November,quartile_four$December)
+chi_squared_raw_returns_1980_1996_quartile_one_scaled_feps<-chisq.test(quartile_one$monthly_returns,quartile_one$month_of_analyst_forecast)
+chi_squared_raw_returns_1980_1996_quartile_two_scaled_feps<-chisq.test(quartile_two$monthly_returns,quartile_two$month_of_analyst_forecast)
+chi_squared_raw_returns_1980_1996_quartile_three_scaled_feps<-chisq.test(quartile_three$monthly_returns,quartile_three$month_of_analyst_forecast)
+chi_squared_raw_returns_1980_1996_quartile_four_scaled_feps<-chisq.test(quartile_four$monthly_returns,quartile_four$month_of_analyst_forecast)
 
 # Excess Quartiles for Scaled FEPS 1980_1996 
 excess_returns_1980_1996_quartile_one_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
@@ -647,10 +647,10 @@ excess_returns_1980_1996_quartile_two_scaled_feps<- lm(excess_returns ~ February
 excess_returns_1980_1996_quartile_three_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
 excess_returns_1980_1996_quartile_four_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
 # Run Chi Squared Test for excess Returns by Scaled FEPS_1980_1996
-chi_squared_excess_returns_1980_1996_quartile_one_scaled_feps<-chisq.test(quartile_one$excess_returns,quartile_one$February,quartile_one$March,quartile_one$April,quartile_one$May,quartile_one$June,quartile_one$July,quartile_one$August,quartile_one$September,quartile_one$October,quartile_one$November,quartile_one$December)
-chi_squared_excess_returns_1980_1996_quartile_two_scaled_feps<-chisq.test(quartile_two$excess_returns,quartile_two$February,quartile_two$March,quartile_two$April,quartile_two$May,quartile_two$June,quartile_two$July,quartile_two$August,quartile_two$September,quartile_two$October,quartile_two$November,quartile_two$December)
-chi_squared_excess_returns_1980_1996_quartile_three_scaled_feps<-chisq.test(quartile_three$excess_returns,quartile_three$February,quartile_three$March,quartile_three$April,quartile_three$May,quartile_three$June,quartile_three$July,quartile_three$August,quartile_three$September,quartile_three$October,quartile_three$November,quartile_three$December)
-chi_squared_excess_returns_1980_1996_quartile_four_scaled_feps<-chisq.test(quartile_four$excess_returns,quartile_four$February,quartile_four$March,quartile_four$April,quartile_four$May,quartile_four$June,quartile_four$July,quartile_four$August,quartile_four$September,quartile_four$October,quartile_four$November,quartile_four$December)
+chi_squared_excess_returns_1980_1996_quartile_one_scaled_feps<-chisq.test(quartile_one$excess_returns,quartile_one$month_of_analyst_forecast)
+chi_squared_excess_returns_1980_1996_quartile_two_scaled_feps<-chisq.test(quartile_two$excess_returns,quartile_two$month_of_analyst_forecast)
+chi_squared_excess_returns_1980_1996_quartile_three_scaled_feps<-chisq.test(quartile_three$excess_returns,quartile_three$month_of_analyst_forecast)
+chi_squared_excess_returns_1980_1996_quartile_four_scaled_feps<-chisq.test(quartile_four$excess_returns,quartile_four$month_of_analyst_forecast)
 
 
 # Run on Quartiled data for 1997_2018
@@ -664,20 +664,20 @@ raw_returns_1997_2018_quartile_two_scaled_feps<- lm(monthly_returns ~ February +
 raw_returns_1997_2018_quartile_three_scaled_feps<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
 raw_returns_1997_2018_quartile_four_scaled_feps<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
 # Run Chi Squared Test for Raw Returns by Scaled FEPS 1997_2018
-chi_squared_raw_returns_1997_2018_quartile_one_scaled_feps<-chisq.test(quartile_one$monthly_returns,quartile_one$February,quartile_one$March,quartile_one$April,quartile_one$May,quartile_one$June,quartile_one$July,quartile_one$August,quartile_one$September,quartile_one$October,quartile_one$November,quartile_one$December)
-chi_squared_raw_returns_1997_2018_quartile_two_scaled_feps<-chisq.test(quartile_two$monthly_returns,quartile_two$February,quartile_two$March,quartile_two$April,quartile_two$May,quartile_two$June,quartile_two$July,quartile_two$August,quartile_two$September,quartile_two$October,quartile_two$November,quartile_two$December)
-chi_squared_raw_returns_1997_2018_quartile_three_scaled_feps<-chisq.test(quartile_three$monthly_returns,quartile_three$February,quartile_three$March,quartile_three$April,quartile_three$May,quartile_three$June,quartile_three$July,quartile_three$August,quartile_three$September,quartile_three$October,quartile_three$November,quartile_three$December)
-chi_squared_raw_returns_1997_2018_quartile_four_scaled_feps<-chisq.test(quartile_four$monthly_returns,quartile_four$February,quartile_four$March,quartile_four$April,quartile_four$May,quartile_four$June,quartile_four$July,quartile_four$August,quartile_four$September,quartile_four$October,quartile_four$November,quartile_four$December)
+chi_squared_raw_returns_1997_2018_quartile_one_scaled_feps<-chisq.test(quartile_one$monthly_returns,quartile_one$month_of_analyst_forecast)
+chi_squared_raw_returns_1997_2018_quartile_two_scaled_feps<-chisq.test(quartile_two$monthly_returns,quartile_two$month_of_analyst_forecast)
+chi_squared_raw_returns_1997_2018_quartile_three_scaled_feps<-chisq.test(quartile_three$monthly_returns,quartile_three$month_of_analyst_forecast)
+chi_squared_raw_returns_1997_2018_quartile_four_scaled_feps<-chisq.test(quartile_four$monthly_returns,quartile_four$month_of_analyst_forecast)
 # Excess Quartiles for scaled feps 1997_2018
 excess_returns_1997_2018_quartile_one_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
 excess_returns_1997_2018_quartile_two_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
 excess_returns_1997_2018_quartile_three_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
 excess_returns_1997_2018_quartile_four_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
 # Run Chi Squared Test for excess Returns by Scaled FEPS 1997_2018
-chi_squared_excess_returns_1997_2018_quartile_one_scaled_feps<-chisq.test(quartile_one$excess_returns,quartile_one$February,quartile_one$March,quartile_one$April,quartile_one$May,quartile_one$June,quartile_one$July,quartile_one$August,quartile_one$September,quartile_one$October,quartile_one$November,quartile_one$December)
-chi_squared_excess_returns_1997_2018_quartile_two_scaled_feps<-chisq.test(quartile_two$excess_returns,quartile_two$February,quartile_two$March,quartile_two$April,quartile_two$May,quartile_two$June,quartile_two$July,quartile_two$August,quartile_two$September,quartile_two$October,quartile_two$November,quartile_two$December)
-chi_squared_excess_returns_1997_2018_quartile_three_scaled_feps<-chisq.test(quartile_three$excess_returns,quartile_three$February,quartile_three$March,quartile_three$April,quartile_three$May,quartile_three$June,quartile_three$July,quartile_three$August,quartile_three$September,quartile_three$October,quartile_three$November,quartile_three$December)
-chi_squared_excess_returns_1997_2018_quartile_four_scaled_feps<-chisq.test(quartile_four$excess_returns,quartile_four$February,quartile_four$March,quartile_four$April,quartile_four$May,quartile_four$June,quartile_four$July,quartile_four$August,quartile_four$September,quartile_four$October,quartile_four$November,quartile_four$December)
+chi_squared_excess_returns_1997_2018_quartile_one_scaled_feps<-chisq.test(quartile_one$excess_returns,quartile_one$month_of_analyst_forecast)
+chi_squared_excess_returns_1997_2018_quartile_two_scaled_feps<-chisq.test(quartile_two$excess_returns,quartile_two$month_of_analyst_forecast)
+chi_squared_excess_returns_1997_2018_quartile_three_scaled_feps<-chisq.test(quartile_three$excess_returns,quartile_three$month_of_analyst_forecast)
+chi_squared_excess_returns_1997_2018_quartile_four_scaled_feps<-chisq.test(quartile_four$excess_returns,quartile_four$month_of_analyst_forecast)
 
 # Run on Quartiled data for 1997_2018
 quartile_one <-distinct_quartiled_1997_2018_regression_data%>% filter(quartile_market_capitalization ==1)
@@ -690,20 +690,20 @@ raw_returns_1997_2018_quartile_two_mc<- lm(monthly_returns ~ February + March + 
 raw_returns_1997_2018_quartile_three_mc<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
 raw_returns_1997_2018_quartile_four_mc<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
 # Run Chi Squared Test for Raw Returns by Scaled FEPS 1997_2018
-chi_squared_raw_returns_1997_2018_quartile_one_mc<-chisq.test(quartile_one$monthly_returns,quartile_one$February,quartile_one$March,quartile_one$April,quartile_one$May,quartile_one$June,quartile_one$July,quartile_one$August,quartile_one$September,quartile_one$October,quartile_one$November,quartile_one$December)
-chi_squared_raw_returns_1997_2018_quartile_two_mc<-chisq.test(quartile_two$monthly_returns,quartile_two$February,quartile_two$March,quartile_two$April,quartile_two$May,quartile_two$June,quartile_two$July,quartile_two$August,quartile_two$September,quartile_two$October,quartile_two$November,quartile_two$December)
-chi_squared_raw_returns_1997_2018_quartile_three_mc<-chisq.test(quartile_three$monthly_returns,quartile_three$February,quartile_three$March,quartile_three$April,quartile_three$May,quartile_three$June,quartile_three$July,quartile_three$August,quartile_three$September,quartile_three$October,quartile_three$November,quartile_three$December)
-chi_squared_raw_returns_1997_2018_quartile_four_mc<-chisq.test(quartile_four$monthly_returns,quartile_four$February,quartile_four$March,quartile_four$April,quartile_four$May,quartile_four$June,quartile_four$July,quartile_four$August,quartile_four$September,quartile_four$October,quartile_four$November,quartile_four$December)
-# Excess Quartiles for MC 1980_1996 
+chi_squared_raw_returns_1997_2018_quartile_one_mc<-chisq.test(quartile_one$monthly_returns,quartile_one$month_of_analyst_forecast)
+chi_squared_raw_returns_1997_2018_quartile_two_mc<-chisq.test(quartile_two$monthly_returns,quartile_two$month_of_analyst_forecast)
+chi_squared_raw_returns_1997_2018_quartile_three_mc<-chisq.test(quartile_three$monthly_returns,quartile_three$month_of_analyst_forecast)
+chi_squared_raw_returns_1997_2018_quartile_four_mc<-chisq.test(quartile_four$monthly_returns,quartile_four$month_of_analyst_forecast)
+# Excess Quartiles for MC 1997_2018
 excess_returns_1997_2018_quartile_one_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
 excess_returns_1997_2018_quartile_two_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
 excess_returns_1997_2018_quartile_three_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
 excess_returns_1997_2018_quartile_four_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
-# Run Chi Squared Test for excess Returns by Scaled FEPS 1997_2018
-chi_squared_excess_returns_1997_2018_quartile_one_mc<-chisq.test(quartile_one$excess_returns,quartile_one$February,quartile_one$March,quartile_one$April,quartile_one$May,quartile_one$June,quartile_one$July,quartile_one$August,quartile_one$September,quartile_one$October,quartile_one$November,quartile_one$December)
-chi_squared_excess_returns_1997_2018_quartile_two_mc<-chisq.test(quartile_two$excess_returns,quartile_two$February,quartile_two$March,quartile_two$April,quartile_two$May,quartile_two$June,quartile_two$July,quartile_two$August,quartile_two$September,quartile_two$October,quartile_two$November,quartile_two$December)
-chi_squared_excess_returns_1997_2018_quartile_three_mc<-chisq.test(quartile_three$excess_returns,quartile_three$February,quartile_three$March,quartile_three$April,quartile_three$May,quartile_three$June,quartile_three$July,quartile_three$August,quartile_three$September,quartile_three$October,quartile_three$November,quartile_three$December)
-chi_squared_excess_returns_1997_2018_quartile_four_mc<-chisq.test(quartile_four$excess_returns,quartile_four$February,quartile_four$March,quartile_four$April,quartile_four$May,quartile_four$June,quartile_four$July,quartile_four$August,quartile_four$September,quartile_four$October,quartile_four$November,quartile_four$December)
+# Run Chi Squared Test for excess Returns by MC 1997_2018
+chi_squared_excess_returns_1997_2018_quartile_one_mc<-chisq.test(quartile_one$excess_returns,quartile_one$month_of_analyst_forecast)
+chi_squared_excess_returns_1997_2018_quartile_two_mc<-chisq.test(quartile_two$excess_returns,quartile_two$month_of_analyst_forecast)
+chi_squared_excess_returns_1997_2018_quartile_three_mc<-chisq.test(quartile_three$excess_returns,quartile_three$month_of_analyst_forecast)
+chi_squared_excess_returns_1997_2018_quartile_four_mc<-chisq.test(quartile_four$excess_returns,quartile_four$month_of_analyst_forecast)
 
 # Run on Quartiled data for All Data
 quartile_one <-full_database_regression_data%>% filter(quartile_feps ==1)
@@ -715,12 +715,21 @@ raw_returns_quartile_one_scaled_feps<- lm(monthly_returns ~ February + March + A
 raw_returns_quartile_two_scaled_feps<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
 raw_returns_quartile_three_scaled_feps<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
 raw_returns_quartile_four_scaled_feps<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+# Run Chi Squared Test for Raw Returns by Scaled Feps
+chi_squared_raw_returns_quartile_one_scaled_feps<-chisq.test(quartile_one$monthly_returns,quartile_one$month_of_analyst_forecast)
+chi_squared_raw_returns_quartile_two_scaled_feps<-chisq.test(quartile_two$monthly_returns,quartile_two$month_of_analyst_forecast)
+chi_squared_raw_returns_quartile_three_scaled_feps<-chisq.test(quartile_three$monthly_returns,quartile_three$month_of_analyst_forecast)
+chi_squared_raw_returns_quartile_four_scaled_feps<-chisq.test(quartile_four$monthly_returns,quartile_four$month_of_analyst_forecast)
 # Excess Quartiles for All Data on scaled feps
 excess_returns_quartile_one_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
 excess_returns_quartile_two_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
 excess_returns_quartile_three_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
 excess_returns_quartile_four_scaled_feps<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
-
+# Run Chi Squared Test for excess Returns by Scaled FEPS
+chi_squared_excess_returns_quartile_one_scaled_feps<-chisq.test(quartile_one$excess_returns,quartile_one$month_of_analyst_forecast)
+chi_squared_excess_returns_quartile_two_scaled_feps<-chisq.test(quartile_two$excess_returns,quartile_two$month_of_analyst_forecast)
+chi_squared_excess_returns_quartile_three_scaled_feps<-chisq.test(quartile_three$excess_returns,quartile_three$month_of_analyst_forecast)
+chi_squared_excess_returns_quartile_four_scaled_feps<-chisq.test(quartile_four$excess_returns,quartile_four$month_of_analyst_forecast)
 # Run on Quartiled data for All Data
 quartile_one <-full_database_regression_data%>% filter(quartile_market_capitalization ==1)
 quartile_two<-full_database_regression_data %>% filter (quartile_market_capitalization==2)
@@ -731,26 +740,44 @@ raw_returns_quartile_one_mc<- lm(monthly_returns ~ February + March + April + Ma
 raw_returns_quartile_two_mc<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
 raw_returns_quartile_three_mc<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
 raw_returns_quartile_four_mc<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+# Run Chi Squared Test for Raw Returns by Scaled Feps
+chi_squared_raw_returns_quartile_one_mc<-chisq.test(quartile_one$monthly_returns,quartile_one$month_of_analyst_forecast)
+chi_squared_raw_returns_quartile_two_mc<-chisq.test(quartile_two$excess_returns,quartile_two$month_of_analyst_forecast)
+chi_squared_raw_returns_quartile_three_mc<-chisq.test(quartile_three$monthly_returns,quartile_three$month_of_analyst_forecast)
+chi_squared_raw_returns_quartile_four_mc<-chisq.test(quartile_four$monthly_returns,quartile_four$month_of_analyst_forecast)
 # Excess Quartiles for All Data on MC  
 excess_returns_quartile_one_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_one)
 excess_returns_quartile_two_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
 excess_returns_quartile_three_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
 excess_returns_quartile_four_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
+# Run Chi Squared Test for excess Returns by MC
+chi_squared_excess_returns_quartile_one_mc<-chisq.test(quartile_one$excess_returns,quartile_one$month_of_analyst_forecast)
+chi_squared_excess_returns_quartile_two_mc<-chisq.test(quartile_two$excess_returns,quartile_two$month_of_analyst_forecast)
+chi_squared_excess_returns_quartile_three_mc<-chisq.test(quartile_three$excess_returns,quartile_three$month_of_analyst_forecast)
+chi_squared_excess_returns_quartile_four_mc<-chisq.test(quartile_four$excess_returns,quartile_four$month_of_analyst_forecast)
 ```
+```{r}
+chi_squared_excess_returns_quartile_one_mc
+chi_squared_excess_returns_quartile_one_mc[1]
+chi_squared_excess_returns_quartile_one_mc[3]
+f_stat<-summary(excess_returns_1997_2018_quartile_four_mc)
+f_stat$fstatistic[1]
+```
+
 Get the Coefficients for Raw Returns by scaled feps 1980 to 1996
 ```{r}
 x <- c("Overall","Q1(Low)","Q2","Q3","Q4(High)")
-y <- c('January','February','March','April','May','June','July','August','September','October','November','December')
+y <- c('January','February','March','April','May','June','July','August','September','October','November','December','F_Statistic','Chi-Squared_Test')
 # Creation of the coefficent table 
-raw_return_regression_coeff_table_1980_1996<- data.frame(matrix(ncol = 5, nrow = 12))
+raw_return_regression_coeff_table_1980_1996<- data.frame(matrix(ncol = 5, nrow = 14))
 colnames(raw_return_regression_coeff_table_1980_1996) <- x
 rownames(raw_return_regression_coeff_table_1980_1996)<-y
 # Creation of the t_stat_table 
-raw_return_regression_t_stat_table_1980_1996<- data.frame(matrix(ncol = 5, nrow = 12))
+raw_return_regression_t_stat_table_1980_1996<- data.frame(matrix(ncol = 5, nrow = 14))
 colnames(raw_return_regression_t_stat_table_1980_1996) <- x
 rownames(raw_return_regression_t_stat_table_1980_1996)<-y
 # Creation of the p_stat_table 
-raw_return_regression_p_stat_table_1980_1996<- data.frame(matrix(ncol = 5, nrow = 12))
+raw_return_regression_p_stat_table_1980_1996<- data.frame(matrix(ncol = 5, nrow = 14))
 colnames(raw_return_regression_p_stat_table_1980_1996) <- x
 rownames(raw_return_regression_p_stat_table_1980_1996)<-y
 # Overall
@@ -1256,10 +1283,6 @@ for(index in 1:length(temp_coeff)){
 write.csv(excess_return_regression_coeff_table_1997_2018_by_mc,"excess_return_regression_coeff_table_1997_2018_by_mc.csv")
 write.csv(excess_return_regression_t_stat_table_1997_2018_by_mc,"excess_return_regression_t_stat_table_1997_2018_by_mc.csv")
 write.csv(excess_return_regression_p_stat_table_1997_2018_by_mc,"excess_return_regression_p_stat_table_1997_2018_by_mc.csv")
-```
-Lol
-```{r}
-distinct_quartiled_1980_1996
 ```
 Get the fStat
 ```{r}
