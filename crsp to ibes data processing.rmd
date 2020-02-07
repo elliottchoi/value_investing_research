@@ -593,11 +593,20 @@ distinct_quartiled_1997_2018_regression_data<-distinct_quartiled_1997_2018_regre
 raw_returns_full_database_regression_model <- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = full_database_regression_data)
 raw_returns_full_database_1980_1996_regression_model<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = distinct_quartiled_1980_1996_regression_data)
 raw_returns_full_database_1997_2018_regression_model<- lm(monthly_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = distinct_quartiled_1997_2018_regression_data)
+# Chi Squared Raw Returns
+chi_squared_raw_returns_1980_1996<-chisq.test(distinct_quartiled_1980_1996_regression_data$monthly_returns,distinct_quartiled_1980_1996_regression_data$month_of_analyst_forecast)
+chi_squared_raw_returns_1997_2018<-chisq.test(distinct_quartiled_1997_2018_regression_data$monthly_returns,distinct_quartiled_1997_2018_regression_data$month_of_analyst_forecast)
+chi_squared_raw_returns_full_database<-chisq.test(full_database_regression_data$monthly_returns,full_database_regression_data$month_of_analyst_forecast)
 
 # Run Regression on excess returns
 excess_returns_full_database_regression_model <- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = full_database_regression_data)
 excess_returns_full_database_1980_1996_regression_model<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = distinct_quartiled_1980_1996_regression_data)
 excess_returns_full_database_1997_2018_regression_model<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = distinct_quartiled_1997_2018_regression_data)
+
+# Chi Squared Excess Returns
+chi_squared_excess_returns_1980_1996<-chisq.test(distinct_quartiled_1980_1996_regression_data$excess_returns,distinct_quartiled_1980_1996_regression_data$month_of_analyst_forecast)
+chi_squared_excess_returns_1997_2018<-chisq.test(distinct_quartiled_1997_2018_regression_data$excess_returns,distinct_quartiled_1997_2018_regression_data$month_of_analyst_forecast)
+chi_squared_excess_returns_full_database<-chisq.test(full_database_regression_data$excess_returns,full_database_regression_data$month_of_analyst_forecast)
 
 # Run on Quartiled data for mc 1980_1996
 quartile_one <-distinct_quartiled_1980_1996_regression_data%>% filter(quartile_market_capitalization ==1)
@@ -769,11 +778,11 @@ Get the Coefficients for Raw Returns by scaled feps 1980 to 1996
 x <- c("Overall","Q1(Low)","Q2","Q3","Q4(High)")
 y <- c('January','February','March','April','May','June','July','August','September','October','November','December','F_Statistic','Chi-Squared_Test')
 # Creation of the coefficent table 
-raw_return_regression_coeff_table_1980_1996<- data.frame(matrix(ncol = 5, nrow = 14))
+raw_return_regression_coeff_table_1980_1996<- data.frame(matrix(ncol = 5, nrow = 12))
 colnames(raw_return_regression_coeff_table_1980_1996) <- x
 rownames(raw_return_regression_coeff_table_1980_1996)<-y
 # Creation of the t_stat_table 
-raw_return_regression_t_stat_table_1980_1996<- data.frame(matrix(ncol = 5, nrow = 14))
+raw_return_regression_t_stat_table_1980_1996<- data.frame(matrix(ncol = 5, nrow = 12))
 colnames(raw_return_regression_t_stat_table_1980_1996) <- x
 rownames(raw_return_regression_t_stat_table_1980_1996)<-y
 # Creation of the p_stat_table 
@@ -789,6 +798,9 @@ for(index in 1:length(temp_coeff)){
   raw_return_regression_t_stat_table_1980_1996[index,1]<-temp_t_stat[index]
   raw_return_regression_p_stat_table_1980_1996[index,1]<-temp_p_stat[index]
 }
+# Add the overall Stats
+raw_return_regression_p_stat_table_1980_1996[13,1]<-
+
 # Quartile One
 temp_coeff<-coef(raw_returns_1980_1996_quartile_one_scaled_feps)
 temp_t_stat<-summary(raw_returns_1980_1996_quartile_one_scaled_feps)[["coefficients"]][, "t value"]
