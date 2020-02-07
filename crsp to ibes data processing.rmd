@@ -671,79 +671,6 @@ excess_returns_quartile_one_mc<- lm(excess_returns ~ February + March + April + 
 excess_returns_quartile_two_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_two)
 excess_returns_quartile_three_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_three)
 excess_returns_quartile_four_mc<- lm(excess_returns ~ February + March + April + May + June + July + August + September + October + November  +December, data = quartile_four)
-
-
-
-# Raw Return Regression on entire data set 
-summary(raw_returns_full_database_regression_model)
-summary(raw_returns_full_database_1980_1996_regression_model)
-summary(raw_returns_full_database_1997_2018_regression_model)
-# Excess Return Regression on entire data set 
-summary(excess_returns_full_database_regression_model)
-summary(excess_returns_full_database_1980_1996_regression_model)
-summary(excess_returns_full_database_1997_2018_regression_model)
-# Raw Return Regression from 1980_1996 by mc
-summary(raw_returns_1980_1996_quartile_one_mc)
-summary(raw_returns_1980_1996_quartile_two_mc)
-summary(raw_returns_1980_1996_quartile_three_mc)
-summary(raw_returns_1980_1996_quartile_four_mc)
-# Excess Return Regression from 1980_1996 by mc
-summary(excess_returns_1980_1996_quartile_one_mc)
-summary(excess_returns_1980_1996_quartile_two_mc)
-summary(excess_returns_1980_1996_quartile_three_mc)
-summary(excess_returns_1980_1996_quartile_four_mc)
-# Raw Return Regression from 1980_1996 by scaled_feps
-summary(raw_returns_1980_1996_quartile_one_scaled_feps)
-summary(raw_returns_1980_1996_quartile_two_scaled_feps)
-summary(raw_returns_1980_1996_quartile_three_scaled_feps)
-summary(raw_returns_1980_1996_quartile_four_mc)
-# Excess Return Regression from 1980_1996 by scaled_feps
-summary(excess_returns_1980_1996_quartile_one_scaled_feps)
-summary(excess_returns_1980_1996_quartile_two_scaled_feps)
-summary(excess_returns_1980_1996_quartile_three_scaled_feps)
-summary(excess_returns_1980_1996_quartile_four_scaled_feps)
-
-# Raw Return Regression from 1997_2018 by mc
-summary(raw_returns_1997_2018_quartile_one_mc)
-summary(raw_returns_1997_2018_quartile_two_mc)
-summary(raw_returns_1997_2018_quartile_three_mc)
-summary(raw_returns_1997_2018_quartile_four_mc)
-# Excess Return Regression from 1997_2018 by mc
-summary(excess_returns_1997_2018_quartile_one_mc)
-summary(excess_returns_1997_2018_quartile_two_mc)
-summary(excess_returns_1997_2018_quartile_three_mc)
-summary(excess_returns_1997_2018_quartile_four_mc)
-# Raw Return Regression from 1997_2018 by scaled feps
-summary(raw_returns_1997_2018_quartile_one_scaled_feps)
-summary(raw_returns_1997_2018_quartile_two_scaled_feps)
-summary(raw_returns_1997_2018_quartile_three_scaled_feps)
-summary(raw_returns_1997_2018_quartile_four_mc)
-# Excess Return Regression from 1997_2018 by scaled feps
-summary(excess_returns_1997_2018_quartile_one_scaled_feps)
-summary(excess_returns_1997_2018_quartile_two_scaled_feps)
-summary(excess_returns_1997_2018_quartile_three_scaled_feps)
-summary(excess_returns_1997_2018_quartile_four_scaled_feps)
-
-# Raw Return Regression for all by mc
-summary(raw_returns_quartile_one_mc)
-summary(raw_returns_quartile_two_mc)
-summary(raw_returns_quartile_three_mc)
-summary(raw_returns_quartile_four_mc)
-# Excess Return Regression for all by mc
-summary(excess_returns_quartile_one_mc)
-summary(excess_returns_quartile_two_mc)
-summary(excess_returns_quartile_three_mc)
-summary(excess_returns_quartile_four_mc)
-# Raw Return Regression for all by scaled feps
-summary(raw_returns_quartile_one_scaled_feps)
-summary(raw_returns_quartile_two_scaled_feps)
-summary(raw_returns_quartile_three_scaled_feps)
-summary(raw_returns_quartile_four_mc)
-# Excess Return Regression for all by scaled feps
-summary(excess_returns_quartile_one_scaled_feps)
-summary(excess_returns_quartile_two_scaled_feps)
-summary(excess_returns_quartile_three_scaled_feps)
-summary(excess_returns_quartile_four_scaled_feps)
 ```
 Get the Coefficients for Raw Returns by scaled feps 1980 to 1996
 ```{r}
@@ -768,7 +695,7 @@ temp_p_stat<-summary(raw_returns_full_database_1980_1996_regression_model)[["coe
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1980_1996[index,1]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1980_1996[index,1]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1980_1996[index,1]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1980_1996[index,1]<-temp_p_stat[index]
 }
 # Quartile One
 temp_coeff<-coef(raw_returns_1980_1996_quartile_one_scaled_feps)
@@ -777,7 +704,7 @@ temp_p_stat<-summary(raw_returns_1980_1996_quartile_one_scaled_feps)[["coefficie
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1980_1996[index,2]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1980_1996[index,2]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1980_1996[index,2]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1980_1996[index,2]<-temp_p_stat[index]
 }
 # Quartile two
 temp_coeff<-coef(raw_returns_1980_1996_quartile_two_scaled_feps)
@@ -786,7 +713,7 @@ temp_p_stat<-summary(raw_returns_1980_1996_quartile_two_scaled_feps)[["coefficie
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1980_1996[index,3]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1980_1996[index,3]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1980_1996[index,3]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1980_1996[index,3]<-temp_p_stat[index]
 }
 # Quartile Three
 temp_coeff<-coef(raw_returns_1980_1996_quartile_three_scaled_feps)
@@ -795,7 +722,7 @@ temp_p_stat<-summary(raw_returns_1980_1996_quartile_three_scaled_feps)[["coeffic
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1980_1996[index,4]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1980_1996[index,4]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1980_1996[index,4]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1980_1996[index,4]<-temp_p_stat[index]
 }
 # Quartile Four
 temp_coeff<-coef(raw_returns_1980_1996_quartile_four_scaled_feps)
@@ -804,7 +731,7 @@ temp_p_stat<-summary(raw_returns_1980_1996_quartile_four_scaled_feps)[["coeffici
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1980_1996[index,5]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1980_1996[index,5]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1980_1996[index,5]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1980_1996[index,5]<-temp_p_stat[index]
 }
 write.csv(raw_return_regression_coeff_table_1980_1996,"raw_return_regression_coeff_table_1980_1996.csv")
 write.csv(raw_return_regression_t_stat_table_1980_1996,"raw_return_regression_t_stat_table_1980_1996.csv")
@@ -833,7 +760,7 @@ temp_p_stat<-summary(excess_returns_full_database_1980_1996_regression_model)[["
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1980_1996[index,1]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1980_1996[index,1]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1980_1996[index,1]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1980_1996[index,1]<-temp_p_stat[index]
 }
 # Quartile One
 temp_coeff<-coef(excess_returns_1980_1996_quartile_one_scaled_feps)
@@ -842,7 +769,7 @@ temp_p_stat<-summary(excess_returns_1980_1996_quartile_one_scaled_feps)[["coeffi
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1980_1996[index,2]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1980_1996[index,2]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1980_1996[index,2]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1980_1996[index,2]<-temp_p_stat[index]
 }
 # Quartile two
 temp_coeff<-coef(excess_returns_1980_1996_quartile_two_scaled_feps)
@@ -851,7 +778,7 @@ temp_p_stat<-summary(excess_returns_1980_1996_quartile_two_scaled_feps)[["coeffi
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1980_1996[index,3]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1980_1996[index,3]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1980_1996[index,3]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1980_1996[index,3]<-temp_p_stat[index]
 }
 # Quartile Three
 temp_coeff<-coef(excess_returns_1980_1996_quartile_three_scaled_feps)
@@ -860,7 +787,7 @@ temp_p_stat<-summary(excess_returns_1980_1996_quartile_three_scaled_feps)[["coef
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1980_1996[index,4]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1980_1996[index,4]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1980_1996[index,4]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1980_1996[index,4]<-temp_p_stat[index]
 }
 # Quartile Four
 temp_coeff<-coef(excess_returns_1980_1996_quartile_four_scaled_feps)
@@ -869,7 +796,7 @@ temp_p_stat<-summary(excess_returns_1980_1996_quartile_four_scaled_feps)[["coeff
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1980_1996[index,5]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1980_1996[index,5]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1980_1996[index,5]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1980_1996[index,5]<-temp_p_stat[index]
 }
 write.csv(excess_return_regression_coeff_table_1980_1996,"excess_return_regression_coeff_table_1980_1996.csv")
 write.csv(excess_return_regression_t_stat_table_1980_1996,"excess_return_regression_t_stat_table_1980_1996.csv")
@@ -898,7 +825,7 @@ temp_p_stat<-summary(raw_returns_full_database_1980_1996_regression_model)[["coe
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1980_1996_by_mc[index,1]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1980_1996_by_mc[index,1]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1980_1996_by_mc[index,1]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1980_1996_by_mc[index,1]<-temp_p_stat[index]
 }
 # Quartile One
 temp_coeff<-coef(raw_returns_1980_1996_quartile_one_mc)
@@ -907,7 +834,7 @@ temp_p_stat<-summary(raw_returns_1980_1996_quartile_one_mc)[["coefficients"]][, 
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1980_1996_by_mc[index,2]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1980_1996_by_mc[index,2]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1980_1996_by_mc[index,2]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1980_1996_by_mc[index,2]<-temp_p_stat[index]
 }
 # Quartile two
 temp_coeff<-coef(raw_returns_1980_1996_quartile_two_mc)
@@ -916,7 +843,7 @@ temp_p_stat<-summary(raw_returns_1980_1996_quartile_two_mc)[["coefficients"]][, 
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1980_1996_by_mc[index,3]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1980_1996_by_mc[index,3]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1980_1996_by_mc[index,3]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1980_1996_by_mc[index,3]<-temp_p_stat[index]
 }
 # Quartile Three
 temp_coeff<-coef(raw_returns_1980_1996_quartile_three_mc)
@@ -925,7 +852,7 @@ temp_p_stat<-summary(raw_returns_1980_1996_quartile_three_mc)[["coefficients"]][
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1980_1996_by_mc[index,4]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1980_1996_by_mc[index,4]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1980_1996_by_mc[index,4]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1980_1996_by_mc[index,4]<-temp_p_stat[index]
 }
 # Quartile Four
 temp_coeff<-coef(raw_returns_1980_1996_quartile_four_mc)
@@ -934,7 +861,7 @@ temp_p_stat<-summary(raw_returns_1980_1996_quartile_four_mc)[["coefficients"]][,
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1980_1996_by_mc[index,5]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1980_1996_by_mc[index,5]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1980_1996_by_mc[index,5]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1980_1996_by_mc[index,5]<-temp_p_stat[index]
 }
 write.csv(raw_return_regression_coeff_table_1980_1996_by_mc,"raw_return_regression_coeff_table_1980_1996_by_mc.csv")
 write.csv(raw_return_regression_t_stat_table_1980_1996_by_mc,"raw_return_regression_t_stat_table_1980_1996_by_mc.csv")
@@ -963,7 +890,7 @@ temp_p_stat<-summary(excess_returns_full_database_1980_1996_regression_model)[["
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1980_1996_by_mc[index,1]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1980_1996_by_mc[index,1]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1980_1996_by_mc[index,1]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1980_1996_by_mc[index,1]<-temp_p_stat[index]
 }
 # Quartile One
 temp_coeff<-coef(excess_returns_1980_1996_quartile_one_mc)
@@ -972,7 +899,7 @@ temp_p_stat<-summary(excess_returns_1980_1996_quartile_one_mc)[["coefficients"]]
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1980_1996_by_mc[index,2]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1980_1996_by_mc[index,2]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1980_1996_by_mc[index,2]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1980_1996_by_mc[index,2]<-temp_p_stat[index]
 }
 # Quartile two
 temp_coeff<-coef(excess_returns_1980_1996_quartile_two_mc)
@@ -981,7 +908,7 @@ temp_p_stat<-summary(excess_returns_1980_1996_quartile_two_mc)[["coefficients"]]
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1980_1996_by_mc[index,3]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1980_1996_by_mc[index,3]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1980_1996_by_mc[index,3]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1980_1996_by_mc[index,3]<-temp_p_stat[index]
 }
 # Quartile Three
 temp_coeff<-coef(excess_returns_1980_1996_quartile_three_mc)
@@ -990,7 +917,7 @@ temp_p_stat<-summary(excess_returns_1980_1996_quartile_three_mc)[["coefficients"
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1980_1996_by_mc[index,4]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1980_1996_by_mc[index,4]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1980_1996_by_mc[index,4]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1980_1996_by_mc[index,4]<-temp_p_stat[index]
 }
 # Quartile Four
 temp_coeff<-coef(excess_returns_1980_1996_quartile_four_mc)
@@ -999,7 +926,7 @@ temp_p_stat<-summary(excess_returns_1980_1996_quartile_four_mc)[["coefficients"]
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1980_1996_by_mc[index,5]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1980_1996_by_mc[index,5]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1980_1996_by_mc[index,5]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1980_1996_by_mc[index,5]<-temp_p_stat[index]
 }
 write.csv(excess_return_regression_coeff_table_1980_1996_by_mc,"excess_return_regression_coeff_table_1980_1996_by_mc.csv")
 write.csv(excess_return_regression_t_stat_table_1980_1996_by_mc,"excess_return_regression_t_stat_table_1980_1996_by_mc.csv")
@@ -1037,7 +964,7 @@ temp_p_stat<-summary(raw_returns_1997_2018_quartile_one_scaled_feps)[["coefficie
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1997_2018[index,2]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1997_2018[index,2]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1997_2018[index,2]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1997_2018[index,2]<-temp_p_stat[index]
 }
 # Quartile two
 temp_coeff<-coef(raw_returns_1997_2018_quartile_two_scaled_feps)
@@ -1046,7 +973,7 @@ temp_p_stat<-summary(raw_returns_1997_2018_quartile_two_scaled_feps)[["coefficie
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1997_2018[index,3]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1997_2018[index,3]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1997_2018[index,3]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1997_2018[index,3]<-temp_p_stat[index]
 }
 # Quartile Three
 temp_coeff<-coef(raw_returns_1997_2018_quartile_three_scaled_feps)
@@ -1055,7 +982,7 @@ temp_p_stat<-summary(raw_returns_1997_2018_quartile_three_scaled_feps)[["coeffic
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1997_2018[index,4]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1997_2018[index,4]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1997_2018[index,4]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1997_2018[index,4]<-temp_p_stat[index]
 }
 # Quartile Four
 temp_coeff<-coef(raw_returns_1997_2018_quartile_four_scaled_feps)
@@ -1064,7 +991,7 @@ temp_p_stat<-summary(raw_returns_1997_2018_quartile_four_scaled_feps)[["coeffici
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1997_2018[index,5]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1997_2018[index,5]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1997_2018[index,5]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1997_2018[index,5]<-temp_p_stat[index]
 }
 write.csv(raw_return_regression_coeff_table_1997_2018,"raw_return_regression_coeff_table_1997_2018.csv")
 write.csv(raw_return_regression_t_stat_table_1997_2018,"raw_return_regression_t_stat_table_1997_2018.csv")
@@ -1093,7 +1020,7 @@ temp_p_stat<-summary(excess_returns_full_database_1997_2018_regression_model)[["
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1997_2018[index,1]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1997_2018[index,1]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1997_2018[index,1]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1997_2018[index,1]<-temp_p_stat[index]
 }
 # Quartile One
 temp_coeff<-coef(excess_returns_1997_2018_quartile_one_scaled_feps)
@@ -1102,7 +1029,7 @@ temp_p_stat<-summary(excess_returns_1997_2018_quartile_one_scaled_feps)[["coeffi
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1997_2018[index,2]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1997_2018[index,2]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1997_2018[index,2]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1997_2018[index,2]<-temp_p_stat[index]
 }
 # Quartile two
 temp_coeff<-coef(excess_returns_1997_2018_quartile_two_scaled_feps)
@@ -1111,7 +1038,7 @@ temp_p_stat<-summary(excess_returns_1997_2018_quartile_two_scaled_feps)[["coeffi
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1997_2018[index,3]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1997_2018[index,3]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1997_2018[index,3]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1997_2018[index,3]<-temp_p_stat[index]
 }
 # Quartile Three
 temp_coeff<-coef(excess_returns_1997_2018_quartile_three_scaled_feps)
@@ -1120,7 +1047,7 @@ temp_p_stat<-summary(excess_returns_1997_2018_quartile_three_scaled_feps)[["coef
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1997_2018[index,4]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1997_2018[index,4]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1997_2018[index,4]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1997_2018[index,4]<-temp_p_stat[index]
 }
 # Quartile Four
 temp_coeff<-coef(excess_returns_1997_2018_quartile_four_scaled_feps)
@@ -1129,7 +1056,7 @@ temp_p_stat<-summary(excess_returns_1997_2018_quartile_four_scaled_feps)[["coeff
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1997_2018[index,5]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1997_2018[index,5]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1997_2018[index,5]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1997_2018[index,5]<-temp_p_stat[index]
 }
 write.csv(excess_return_regression_coeff_table_1997_2018,"excess_return_regression_coeff_table_1997_2018.csv")
 write.csv(excess_return_regression_t_stat_table_1997_2018,"excess_return_regression_t_stat_table_1997_2018.csv")
@@ -1158,7 +1085,7 @@ temp_p_stat<-summary(raw_returns_full_database_1997_2018_regression_model)[["coe
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1997_2018_by_mc[index,1]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1997_2018_by_mc[index,1]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1997_2018_by_mc[index,1]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1997_2018_by_mc[index,1]<-temp_p_stat[index]
 }
 # Quartile One
 temp_coeff<-coef(raw_returns_1997_2018_quartile_one_mc)
@@ -1167,7 +1094,7 @@ temp_p_stat<-summary(raw_returns_1997_2018_quartile_one_mc)[["coefficients"]][, 
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1997_2018_by_mc[index,2]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1997_2018_by_mc[index,2]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1997_2018_by_mc[index,2]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1997_2018_by_mc[index,2]<-temp_p_stat[index]
 }
 # Quartile two
 temp_coeff<-coef(raw_returns_1997_2018_quartile_two_mc)
@@ -1176,7 +1103,7 @@ temp_p_stat<-summary(raw_returns_1997_2018_quartile_two_mc)[["coefficients"]][, 
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1997_2018_by_mc[index,3]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1997_2018_by_mc[index,3]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1997_2018_by_mc[index,3]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1997_2018_by_mc[index,3]<-temp_p_stat[index]
 }
 # Quartile Three
 temp_coeff<-coef(raw_returns_1997_2018_quartile_three_mc)
@@ -1185,7 +1112,7 @@ temp_p_stat<-summary(raw_returns_1997_2018_quartile_three_mc)[["coefficients"]][
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1997_2018_by_mc[index,4]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1997_2018_by_mc[index,4]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1997_2018_by_mc[index,4]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1997_2018_by_mc[index,4]<-temp_p_stat[index]
 }
 # Quartile Four
 temp_coeff<-coef(raw_returns_1997_2018_quartile_four_mc)
@@ -1194,7 +1121,7 @@ temp_p_stat<-summary(raw_returns_1997_2018_quartile_four_mc)[["coefficients"]][,
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1997_2018_by_mc[index,5]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1997_2018_by_mc[index,5]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1997_2018_by_mc[index,5]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1997_2018_by_mc[index,5]<-temp_p_stat[index]
 }
 write.csv(raw_return_regression_coeff_table_1997_2018_by_mc,"raw_return_regression_coeff_table_1997_2018_by_mc.csv")
 write.csv(raw_return_regression_t_stat_table_1997_2018_by_mc,"raw_return_regression_t_stat_table_1997_2018_by_mc.csv")
@@ -1223,7 +1150,7 @@ temp_p_stat<-summary(excess_returns_full_database_1997_2018_regression_model)[["
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1997_2018_by_mc[index,1]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1997_2018_by_mc[index,1]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1997_2018_by_mc[index,1]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1997_2018_by_mc[index,1]<-temp_p_stat[index]
 }
 # Quartile One
 temp_coeff<-coef(excess_returns_1997_2018_quartile_one_mc)
@@ -1232,7 +1159,7 @@ temp_p_stat<-summary(excess_returns_1997_2018_quartile_one_mc)[["coefficients"]]
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1997_2018_by_mc[index,2]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1997_2018_by_mc[index,2]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1997_2018_by_mc[index,2]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1997_2018_by_mc[index,2]<-temp_p_stat[index]
 }
 # Quartile two
 temp_coeff<-coef(excess_returns_1997_2018_quartile_two_mc)
@@ -1241,7 +1168,7 @@ temp_p_stat<-summary(excess_returns_1997_2018_quartile_two_mc)[["coefficients"]]
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1997_2018_by_mc[index,3]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1997_2018_by_mc[index,3]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1997_2018_by_mc[index,3]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1997_2018_by_mc[index,3]<-temp_p_stat[index]
 }
 # Quartile Three
 temp_coeff<-coef(excess_returns_1997_2018_quartile_three_mc)
@@ -1250,7 +1177,7 @@ temp_p_stat<-summary(excess_returns_1997_2018_quartile_three_mc)[["coefficients"
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1997_2018_by_mc[index,4]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1997_2018_by_mc[index,4]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1997_2018_by_mc[index,4]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1997_2018_by_mc[index,4]<-temp_p_stat[index]
 }
 # Quartile Four
 temp_coeff<-coef(excess_returns_1997_2018_quartile_four_mc)
@@ -1259,7 +1186,7 @@ temp_p_stat<-summary(excess_returns_1997_2018_quartile_four_mc)[["coefficients"]
 for(index in 1:length(temp_coeff)){
   excess_return_regression_coeff_table_1997_2018_by_mc[index,5]<-temp_coeff[index]
   excess_return_regression_t_stat_table_1997_2018_by_mc[index,5]<-temp_t_stat[index]
-  excess_return_regression_p_stat_table_1997_2018_by_mc[index,5]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_1997_2018_by_mc[index,5]<-temp_p_stat[index]
 }
 write.csv(excess_return_regression_coeff_table_1997_2018_by_mc,"excess_return_regression_coeff_table_1997_2018_by_mc.csv")
 write.csv(excess_return_regression_t_stat_table_1997_2018_by_mc,"excess_return_regression_t_stat_table_1997_2018_by_mc.csv")
