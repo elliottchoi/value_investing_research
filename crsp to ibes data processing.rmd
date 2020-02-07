@@ -1410,4 +1410,13 @@ stock_database_1996_table[6,4]<-mean(quartile_three_1996$market_capitalization)
 stock_database_1996_table[6,5]<-mean(quartile_four_1996$market_capitalization)
 write.csv(stock_database_1996_table,"stock_database_1996_table.csv")
 ```
+Get Summary Stats on data
+```{r}
+nrow(FULL_DATABASE_v01)
+nrow(full_database_from_1980_1996)
+nrow(full_database_from_1997_2018)
+nrow(distinct_FULL_DATABASE%>% distinct(cusip))
+nrow(distinct_quartiled_1980_1996%>% distinct(cusip))
+nrow(distinct_quartiled_1997_2018%>% distinct(cusip))
+```
 
