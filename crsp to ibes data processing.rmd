@@ -955,7 +955,7 @@ temp_p_stat<-summary(raw_returns_full_database_1997_2018_regression_model)[["coe
 for(index in 1:length(temp_coeff)){
   raw_return_regression_coeff_table_1997_2018[index,1]<-temp_coeff[index]
   raw_return_regression_t_stat_table_1997_2018[index,1]<-temp_t_stat[index]
-  raw_return_regression_p_stat_table_1997_2018[index,1]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_1997_2018[index,1]<-temp_p_stat[index]
 }
 # Quartile One
 temp_coeff<-coef(raw_returns_1997_2018_quartile_one_scaled_feps)
