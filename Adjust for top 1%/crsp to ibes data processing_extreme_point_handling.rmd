@@ -66,14 +66,14 @@ base_tickers_for_IBES
 
 IBES US Pull
 ```{r}
-res <- dbSendQuery(wrds, "select fpi,anndats,fpedats, cusip, oftic, analys, value from ibes.det_epsus
+res <- dbSendQuery(wrds, "select fpi,anndats,fpedats, cusip, ticker, analys, value from ibes.det_epsus
                    where fpedats between '1980-01-01' and '2019-12-31'
                    and cusip !='' and (fpi = '1' or fpi = '2')")
 ibes_pull_us<- dbFetch(res, n=-1)
 dbClearResult(res)
 ibes_pull_us
 # Filter out all the cusips we dont need b/c they are not in the crsp database
-ibes_pull_us<- inner_join(ibes_pull_us,base_tickers_for_IBES,by = c("oftic"="TICKER"))
+ibes_pull_us<- inner_join(ibes_pull_us,base_tickers_for_IBES,by = c("ticker"="TICKER"))
 
 # Find the 12th month 
 ibes_pull_us$forecast_end_period_month <- format(ibes_pull_us$fpedats,"%m")
@@ -82,14 +82,14 @@ ibes_pull_us
 ```
 IBES Int Pull
 ```{r}
-res <- dbSendQuery(wrds, "select fpi,anndats,fpedats, cusip, oftic, analys, value from ibes.det_epsint
+res <- dbSendQuery(wrds, "select fpi,anndats,fpedats, cusip, ticker, analys, value from ibes.det_epsint
                    where fpedats between '1980-01-01' and '2019-12-31'
                    and cusip !='' and (fpi = '1' or fpi = '2')")
 ibes_pull_int<- dbFetch(res, n=-1)
 dbClearResult(res)
 
 # Filter out all the cusips we dont need b/c they are not in the crsp database
-ibes_pull_int<- inner_join(ibes_pull_int,base_tickers_for_IBES,by = c("oftic"="TICKER"))
+ibes_pull_int<- inner_join(ibes_pull_int,base_tickers_for_IBES,by = c("ticker"="TICKER"))
 
 # Find the 12th month 
 ibes_pull_int$forecast_end_period_month <- format(ibes_pull_int$fpedats,"%m")
@@ -106,12 +106,12 @@ ibes$year_of_analyst_forecast <- format(ibes$anndats,"%Y")
 # The Year in which the forecast was for 
 ibes$forecast_period_end_year <- format(ibes$fpedats,"%Y")
 # Count the number of analyst predictions per month 
-ibes <- ibes %>% group_by(oftic,year_of_analyst_forecast,month_of_analyst_forecast,forecast_period_end_year) %>% mutate (number_of_analyst_predictions = n_distinct(anndats,analys))
+ibes <- ibes %>% group_by(ticker,year_of_analyst_forecast,month_of_analyst_forecast,forecast_period_end_year) %>% mutate (number_of_analyst_predictions = n_distinct(anndats,analys))
 ibes <- ibes %>% filter(number_of_analyst_predictions >=3)
 # get the month/year of the analyst_forecast
 ibes$month_and_year_of_analyst_forecast <- format(ibes$anndats,"%m-%Y")
 # group the data into (company, forecast end period) and ensure that there are at least 20 months of data
-ibes <- ibes %>% group_by(oftic,forecast_period_end_year) %>% mutate (number_of_months_per_forecast_period_end = n_distinct(month_and_year_of_analyst_forecast))
+ibes <- ibes %>% group_by(ticker,forecast_period_end_year) %>% mutate (number_of_months_per_forecast_period_end = n_distinct(month_and_year_of_analyst_forecast))
 ibes
 ```
 Check to make sure we have (t+1) jan data, and then june (t-1) to dec (t-1)
@@ -169,11 +169,11 @@ ibes_t<-rbind(ibes_fpi_one_t, ibes_fpi_two_t)
 ibes_t_minus_one<-ibes_fpi_one_t_minus_one
 ibes_t_plus_one<-rbind(ibes_fpi_one_t_plus_one, ibes_fpi_two_t_plus_one)
 # Ensure that for each company for their perspective calendary year for t, they have 12 months of data
-ibes_t<- ibes_t %>% group_by(oftic,fpedats)%>% mutate(number_of_consecutive_months = n_distinct(month_and_year_of_analyst_forecast))
+ibes_t<- ibes_t %>% group_by(ticker,fpedats)%>% mutate(number_of_consecutive_months = n_distinct(month_and_year_of_analyst_forecast))
 ibes_t <- ibes_t %>% filter(number_of_consecutive_months==12)
 
 # Ensure that for each company for their perspective calendary year for t+1 they have 7 months of data 
-ibes_t_plus_one<- ibes_t_plus_one %>% group_by(oftic,fpedats)%>% mutate(number_of_consecutive_months = n_distinct(month_and_year_of_analyst_forecast))
+ibes_t_plus_one<- ibes_t_plus_one %>% group_by(ticker,fpedats)%>% mutate(number_of_consecutive_months = n_distinct(month_and_year_of_analyst_forecast))
 ibes_t_plus_one <- ibes_t_plus_one %>% filter(number_of_consecutive_months>=7)
 ```
 Save these filtered files
@@ -192,12 +192,15 @@ Bind these file together
 ```{r}
 IBES_DATABASE<-rbind(ibes_t,ibes_t_minus_one,ibes_t_plus_one)
 # Filter to makes sure that for any given year we have 20 months of data
-IBES_DATABASE<- IBES_DATABASE %>% group_by(oftic,fpedats)%>% mutate(total_consectutive_months = n_distinct(month_and_year_of_analyst_forecast))
+IBES_DATABASE<- IBES_DATABASE %>% group_by(ticker,fpedats)%>% mutate(total_consectutive_months = n_distinct(month_and_year_of_analyst_forecast))
 IBES_DATABASE <- IBES_DATABASE %>% filter(total_consectutive_months >=20)
+# Filter to makes sure that for any given company we have 9 years 
+IBES_DATABASE<- IBES_DATABASE %>% group_by(ticker)%>% mutate(total_years = n_distinct(year_of_analyst_forecast))
+IBES_DATABASE <- IBES_DATABASE %>% filter(total_years >=9)
 ```
 Display the Database
 ```{r}
-IBES_DATABASE <- arrange(IBES_DATABASE, oftic, anndats,fpedats)
+IBES_DATABASE <- arrange(IBES_DATABASE, ticker, anndats,fpedats)
 IBES_DATABASE
 ```
 Save IBES Database
@@ -212,51 +215,51 @@ IBES_DATABASE
 Call From WRDS Server
 ```{r}
 # Get the IBES Actual Values from US
-res <- dbSendQuery(wrds, "select cusip, pends,oftic,value from ibes.act_epsus
+res <- dbSendQuery(wrds, "select cusip, pends,ticker,value from ibes.act_epsus
                    where pends between '1980-01-01' and '2018-12-31'
                    and pdicity = 'ANN'
                    and cusip !=''")
 ibes_actuals_us<- dbFetch(res, n=-1)
 dbClearResult(res)
 # Join the cusips so we remove any extra ones we do not need are removed
-ibes_actuals_us <- inner_join(ibes_actuals_us,crsp_data_ticker,by =c("oftic"="TICKER"))
+ibes_actuals_us <- inner_join(ibes_actuals_us,crsp_data_ticker,by =c("ticker"="TICKER"))
 ibes_actuals_us$period_end_month <- format(ibes_actuals_us$pends,"%m")
 ibes_actuals_us <- ibes_actuals_us %>% filter(str_detect(period_end_month,'12'))
 # Get the IBES Actual Values from INT
-res <- dbSendQuery(wrds, "select cusip,pends,oftic, value from ibes.act_epsint
+res <- dbSendQuery(wrds, "select cusip,pends,ticker, value from ibes.act_epsint
                    where pends between '1980-01-01' and '2018-12-31'
                    and pdicity = 'ANN'
                    and cusip !=''")
 ibes_actuals_int<- dbFetch(res, n=-1)
 dbClearResult(res)
-ibes_actuals_int <- inner_join(ibes_actuals_int,crsp_data_ticker,by =c("oftic"="TICKER"))
+ibes_actuals_int <- inner_join(ibes_actuals_int,crsp_data_ticker,by =c("ticker"="TICKER"))
 ibes_actuals_int$period_end_month <- format(ibes_actuals_int$pends,"%m")
 ibes_actuals_int <- ibes_actuals_int %>% filter(str_detect(period_end_month,'12'))
 # Bind the two actuals together 
 ibes_actuals<-rbind(ibes_actuals_us, ibes_actuals_int)
 ibes_actuals<-rename(ibes_actuals, actual_annual_eps = value)
 ibes_actuals$period_end_month<-as.numeric(ibes_actuals$period_end_month) 
-ibes_actuals<-ibes_actuals%>%distinct(oftic,pends,.keep_all = TRUE)
+ibes_actuals<-ibes_actuals%>%distinct(ticker,pends,.keep_all = TRUE)
 ```
 Parse the Results
 ```{r}
-crsp_data_v1 <- subset(crsp_data_v1, select = -c('cusip'))
+crsp_data_v1 <- subset(crsp_data_v1, select = -c(cusip))
 IBES_DATABASE$fpedats<-as.Date(IBES_DATABASE$fpedats)
 crsp_data_v1$month<-as.numeric(crsp_data_v1$month)
 crsp_data_v1$year<-as.numeric(crsp_data_v1$year)
 
 # minimize headers we need for IBES
-col_for_IBES<- c('anndats','fpedats','cusip','oftic','analys','value','month_of_analyst_forecast','year_of_analyst_forecast','forecast_period_end_year','number_of_analyst_predictions','month_and_year_of_analyst_forecast','t','t_minus_one','t_plus_one')
+col_for_IBES<- c('anndats','fpedats','cusip','ticker','analys','value','month_of_analyst_forecast','year_of_analyst_forecast','forecast_period_end_year','number_of_analyst_predictions','month_and_year_of_analyst_forecast','t','t_minus_one','t_plus_one')
 IBES_DATABASE<- IBES_DATABASE[,col_for_IBES]
 
 #Minimize headers for IBES_actuals
-col_for_IBES_actuals<-c('pends','actual_annual_eps','oftic')
+col_for_IBES_actuals<-c('pends','actual_annual_eps','ticker')
 ibes_actuals<-ibes_actuals[,col_for_IBES_actuals]
 
 # Now we should bind the two databases together so IBES DATABASE now contains actual data
-IBES_DATABASE<- inner_join(IBES_DATABASE,ibes_actuals, by = c("oftic"="oftic","fpedats"="pends" ))
+IBES_DATABASE<- inner_join(IBES_DATABASE,ibes_actuals, by = c("ticker"="ticker","fpedats"="pends" ))
 # Add Analyst Standard Deviation to each other 
-IBES_DATABASE<- IBES_DATABASE %>% group_by(oftic,month_and_year_of_analyst_forecast)%>% mutate(forecast_standard_deviation = sd(value))
+IBES_DATABASE<- IBES_DATABASE %>% group_by(ticker,month_and_year_of_analyst_forecast)%>% mutate(forecast_standard_deviation = sd(value))
 # Rename IBES_DATABASE value column to f_eps
 IBES_DATABASE<- rename(IBES_DATABASE, f_eps=value)
 # Get the S&P 500 returns data
@@ -275,15 +278,15 @@ benchmark_data$month <- as.numeric(benchmark_data$month)
 # Merge the benchmark data with IBES_DATABASE
 IBES_DATABASE <- inner_join(IBES_DATABASE, benchmark_data, by = c('month_of_analyst_forecast'='month', 'year_of_analyst_forecast'='year'))
 # Join the CRSP Database with the IBES_DATABASE
-FULL_DATABASE <- inner_join(IBES_DATABASE,crsp_data_v1, by = c('oftic'='TICKER','month_of_analyst_forecast'='month','year_of_analyst_forecast'='year'))
+FULL_DATABASE <- inner_join(IBES_DATABASE,crsp_data_v1, by = c('ticker'='TICKER','month_of_analyst_forecast'='month','year_of_analyst_forecast'='year'))
 # Calculate excess returns which is monthly stock return less the S&P 500 stock return
 FULL_DATABASE$excess_returns <-FULL_DATABASE$monthly_returns - FULL_DATABASE$benchmark_returns
 FULL_DATABASE<- rename(FULL_DATABASE,forecast_end_period = fpedats)
 # Get the columns we want
-col_order <- c("year_of_analyst_forecast", "month_of_analyst_forecast", "permno","cusip","oftic","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_analyst_predictions","forecast_end_period","analys","f_eps","forecast_standard_deviation","market_capitalization","exchange",'t','t_minus_one','t_plus_one')
+col_order <- c("year_of_analyst_forecast", "month_of_analyst_forecast", "permno","cusip","ticker","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_analyst_predictions","forecast_end_period","analys","f_eps","forecast_standard_deviation","market_capitalization","exchange",'t','t_minus_one','t_plus_one')
 FULL_DATABASE<-FULL_DATABASE[,col_order]
 # Add average analyst forecast for each month
-FULL_DATABASE <- FULL_DATABASE%>%group_by(oftic, year_of_analyst_forecast,month_of_analyst_forecast,forecast_end_period)%>% mutate(average_forecasted_earnings = mean(f_eps))
+FULL_DATABASE <- FULL_DATABASE%>%group_by(ticker, year_of_analyst_forecast,month_of_analyst_forecast,forecast_end_period)%>% mutate(average_forecasted_earnings = mean(f_eps))
 # Calculate the forecast standard deviation scaled by price 
 FULL_DATABASE$scaled_feps<-FULL_DATABASE$forecast_standard_deviation/FULL_DATABASE$price
 # Save File 
@@ -294,11 +297,11 @@ Begin to Quartile the Data
 ```{r}
 # We want to segment the data by only the june values and if t-1, which means it is predict a year ahead
 june_full_database<- FULL_DATABASE %>% filter(month_of_analyst_forecast ==6)
-col_order <- c("year_of_analyst_forecast", "month_of_analyst_forecast", "permno","cusip","oftic","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_analyst_predictions","forecast_end_period","analys","f_eps","scaled_feps","forecast_standard_deviation","market_capitalization","exchange",'t_plus_one')
+col_order <- c("year_of_analyst_forecast", "month_of_analyst_forecast", "permno","cusip","ticker","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_analyst_predictions","forecast_end_period","analys","f_eps","scaled_feps","forecast_standard_deviation","market_capitalization","exchange",'t_plus_one')
 june_full_database<- june_full_database[,col_order]
 june_full_database<-na.omit(june_full_database)
 # Take only one row per company/data
-june_full_database<- june_full_database %>% distinct(oftic,month_of_analyst_forecast,.keep_all=TRUE)
+june_full_database<- june_full_database %>% distinct(ticker,month_of_analyst_forecast,.keep_all=TRUE)
 # Takes the quartile data of june 1st data by year  
 june_full_database<- june_full_database %>% group_by(year_of_analyst_forecast)%>% mutate(quartile_feps = ntile(scaled_feps,4))
 june_full_database<- june_full_database %>% group_by(year_of_analyst_forecast)%>% mutate(quartile_market_capitalization = ntile(market_capitalization,4))
@@ -308,7 +311,7 @@ june_full_database_mapping<- june_full_database[,col_order]
 # Match this back to our database 
 FULL_DATABASE_v01 <- inner_join(FULL_DATABASE,june_full_database_mapping,by=c('cusip'='cusip', 'forecast_end_period'='forecast_end_period'))
 # Get only the distinct rows (E.g. for each month )
-distinct_FULL_DATABASE<- FULL_DATABASE_v01 %>% distinct(oftic,year_of_analyst_forecast,month_of_analyst_forecast,.keep_all = TRUE)
+distinct_FULL_DATABASE<- FULL_DATABASE_v01 %>% distinct(ticker,year_of_analyst_forecast,month_of_analyst_forecast,.keep_all = TRUE)
 # Stats for George 
 full_database_from_1980_1996 <- FULL_DATABASE_v01 %>% filter(year_of_analyst_forecast<=1996)
 full_database_from_1997_2018 <- FULL_DATABASE_v01 %>% filter(year_of_analyst_forecast>=1997)
