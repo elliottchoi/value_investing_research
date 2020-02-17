@@ -295,8 +295,8 @@ FULL_DATABASE
 ```
 Begin to Quartile the Data
 ```{r}
-# We want to segment the data by only the june values and if t-1, which means it is predict a year ahead
-june_full_database<- FULL_DATABASE %>% filter(month_of_analyst_forecast ==6)
+# We want to segment the data by only the june values and if t+1, which means it is predict a year ahead
+june_full_database<- FULL_DATABASE %>% filter(month_of_analyst_forecast ==6 & t_plus_one = 'true')
 col_order <- c("year_of_analyst_forecast", "month_of_analyst_forecast", "permno","cusip","ticker","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_analyst_predictions","forecast_end_period","analys","f_eps","scaled_feps","forecast_standard_deviation","market_capitalization","exchange",'t_plus_one')
 june_full_database<- june_full_database[,col_order]
 june_full_database<-na.omit(june_full_database)
