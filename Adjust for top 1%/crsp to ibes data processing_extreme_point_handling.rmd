@@ -149,7 +149,7 @@ ibes_fpi_two
 ```
 Save files
 ```{r}
-write.csv(ibes_fpi_one,"ibes_fpi_one.csv")
+write.csv(ibes_fpi_one,"ibes_fpi_one_v1.csv")
 write.csv(ibes_fpi_two,"ibes_fpi_two.csv")
 ```
 Merge only the t-1 together and t+1 together 
@@ -327,7 +327,7 @@ distinct_FULL_DATABASE <- distinct_FULL_DATABASE%>%group_by(cusip,forecast_end_p
 distinct_quartiled_1980_1996 <- distinct_FULL_DATABASE %>% filter(year_of_analyst_forecast<=1996)
 first_unique_month_june_stock_database_1980_1996_quartiled <- june_full_database %>% filter(year_of_analyst_forecast<=1996)
 distinct_quartiled_1997_2018 <- distinct_FULL_DATABASE %>% filter(year_of_analyst_forecast>=1997)
-first_unique_month_june_stock_database_1997_2018_quartiled <- june_full_database %>% filter(year_of_analyst_forecast<=1996)
+first_unique_month_june_stock_database_1997_2018_quartiled <- june_full_database %>% filter(year_of_analyst_forecast>=1997)
 write.csv(first_unique_month_june_stock_database_1980_1996_quartiled,"first_unique_month_june_stock_database_1980_1996_quartiled.csv")
 write.csv(first_unique_month_june_stock_database_1997_2018_quartiled,"first_unique_month_june_stock_database_1997_2018_quartiled.csv")
 ```
