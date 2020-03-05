@@ -240,6 +240,31 @@ IBES_DATABASE<- inner_join(IBES_DATABASE,ibes_actuals, by = c("ticker"="ticker",
 IBES_DATABASE<- IBES_DATABASE %>% group_by(ticker,month_and_year_of_analyst_forecast)%>% mutate(forecast_standard_deviation = sd(value))
 # Rename IBES_DATABASE value column to f_eps
 IBES_DATABASE<- rename(IBES_DATABASE, f_eps=value)
+```
+# Get the various BETAs
+```{r}
+# Get the AMEX/NYSE BETA data
+res <- dbSendQuery(wrds, "select permno,date,betav,year from crspa.dport6
+                   where date between '1980-01-01'
+                   and '2018-12-31'")
+amex_nyse_beta_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+
+# Get the NASDAQ BETA data
+res <- dbSendQuery(wrds, "select permno,date,betav,year from crspa.dport8
+                   where date between '1980-01-01'
+                   and '2018-12-31'")
+nasdaq_beta_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+total_betas<- rbind(amex_nyse_beta_data,nasdaq_beta_data)
+```
+# Merge the BETA with crsp
+```{r}
+crsp_with_beta<-inner_join(total_betas,crsp_data_v1,by =c('permno'='permno','year'='year'))
+crsp_with_beta<-unique(crsp_with_beta)
+head(crsp_with_beta)
+```
+```{r}
 # Get the S&P 500 returns data
 res <- dbSendQuery(wrds, "select caldt, sprtrn from crspa.msp500
                    where caldt between '1980-01-01'
@@ -256,9 +281,9 @@ benchmark_data$month <- as.numeric(benchmark_data$month)
 # Merge the benchmark data with IBES_DATABASE
 IBES_DATABASE <- inner_join(IBES_DATABASE, benchmark_data, by = c('month_of_analyst_forecast'='month', 'year_of_analyst_forecast'='year'))
 # Join the CRSP Database with the IBES_DATABASE
-FULL_DATABASE <- inner_join(IBES_DATABASE,crsp_data_v1, by = c('ticker'='TICKER','month_of_analyst_forecast'='month','year_of_analyst_forecast'='year'))
+FULL_DATABASE <- inner_join(IBES_DATABASE,crsp_with_beta, by = c('ticker'='TICKER','month_of_analyst_forecast'='month','year_of_analyst_forecast'='year'))
 # Calculate excess returns which is monthly stock return less the S&P 500 stock return
-FULL_DATABASE$excess_returns <-FULL_DATABASE$monthly_returns - FULL_DATABASE$benchmark_returns
+FULL_DATABASE$excess_returns <-FULL_DATABASE$monthly_returns - FULL_DATABASE$benchmark_returns*FULL_DATABASE$betav
 FULL_DATABASE<- rename(FULL_DATABASE,forecast_end_period = fpedats)
 # Get the columns we want
 col_order <- c("year_of_analyst_forecast", "month_of_analyst_forecast", "permno","ticker","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_analyst_predictions","forecast_end_period","analys","f_eps","forecast_standard_deviation","market_capitalization","exchange",'t','t_minus_one','t_plus_one')
