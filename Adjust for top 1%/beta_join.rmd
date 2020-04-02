@@ -1,0 +1,259 @@
+---
+title: "Betas and CRSP"
+output: html_notebook
+---
+
+```{r}
+library(RPostgres)
+wrds <- dbConnect(Postgres(),
+                  host='wrds-pgdata.wharton.upenn.edu',
+                  port=9737,
+                  dbname='wrds',
+                  sslmode='require',
+                  user='echoi98')
+library(tidyverse)
+library(dbplyr)
+library(reticulate)
+library(magrittr)
+library(caret)
+library(fastDummies)
+```
+# crsp data
+```{r}
+# hexcd 1 = NYSE, hexcd 2 = AMEX, hexcd 3 = NASDAQ 
+res <- dbSendQuery(wrds, "select date,permno,cusip,prc, ret, vol, shrout ,hexcd, cfacpr from crspa.msf
+                   where date between '1979-12-01'
+                   and '2018-12-31'")
+crsp_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+head(crsp_data)
+```
+# Adjustments to CRSP data
+```{r}
+crsp_data_v1<-crsp_data
+crsp_data_v1$year <- format(crsp_data_v1$date,"%Y")
+crsp_data_v1$month <- format(crsp_data_v1$date,"%m")
+list_of_eom_dates<-crsp_data_v1['date']
+list_of_eom_dates<- list_of_eom_dates%>% distinct(date)
+head(list_of_eom_dates)
+```
+
+# Getting Beta Data Returns
+```{r}
+# get beta weighted portfolio - annual for NYSE/AMEX
+res <- dbSendQuery(wrds, "select caldt,decind1,decind2,decind3,decind4,decind5,decind6,decind7,decind8,decind9,decind10 from crspa.dsbc
+                   where caldt between '1979-12-01'
+                   and '2018-12-31'")
+beta_AMEX_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+# Take out NAs
+beta_AMEX_data <- na.omit(beta_AMEX_data)
+beta_AMEX_data$year<- format(beta_AMEX_data$caldt,"%Y")
+beta_AMEX_data$month<- format(beta_AMEX_data$caldt,"%m")
+beta_AMEX_data$day<- format(beta_AMEX_data$caldt,"%d")
+# We want to calculate the monthly benchmark returns 
+beta_AMEX_data <- inner_join(beta_AMEX_data,list_of_eom_dates, c("caldt"="date"))
+write.csv(beta_AMEX_data,"beta_AMEX_data.csv")
+```
+# Get NASDAQ Beta returns
+```{r}
+# get beta weighted portfolio - annual for NASDAQ
+res <- dbSendQuery(wrds, "select caldt,decind1,decind2,decind3,decind4,decind5,decind6,decind7,decind8,decind9,decind10 from crspa.dsbo
+                   where caldt between '1979-12-01'
+                   and '2018-12-31'")
+beta_NASDAQ_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+
+beta_NASDAQ_data  <- na.omit(beta_NASDAQ_data )
+beta_NASDAQ_data $year<- format(beta_NASDAQ_data $caldt,"%Y")
+beta_NASDAQ_data $month<- format(beta_NASDAQ_data $caldt,"%m")
+beta_NASDAQ_data $day<- format(beta_NASDAQ_data $caldt,"%d")
+# We want to calculate the monthly benchmark returns 
+beta_NASDAQ_data  <- inner_join(beta_NASDAQ_data ,list_of_eom_dates, c("caldt"="date"))
+write.csv(beta_NASDAQ_data,"beta_NASDAQ_data.csv")
+```
+# Read in the adjusted beta files
+```{r}
+NASDAQ_Beta_Portfolios_Monthly_Returns<-read.csv("NASDAQ_Beta_Portfolios_Monthly_Returns.csv",header = TRUE)
+NASDAQ_Beta_Portfolios_Monthly_Returns$month<-as.numeric(NASDAQ_Beta_Portfolios_Monthly_Returns$month)
+NASDAQ_Beta_Portfolios_Monthly_Returns$year<-as.numeric(NASDAQ_Beta_Portfolios_Monthly_Returns$year)
+head(NASDAQ_Beta_Portfolios_Monthly_Returns)
+#Decile the data
+decile_NASDAQ_1_returns<-subset(NASDAQ_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_1_returns))
+decile_NASDAQ_2_returns<-subset(NASDAQ_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_2_returns))
+decile_NASDAQ_3_returns<-subset(NASDAQ_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_3_returns))
+decile_NASDAQ_4_returns<-subset(NASDAQ_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_4_returns))
+decile_NASDAQ_5_returns<-subset(NASDAQ_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_5_returns))
+decile_NASDAQ_6_returns<-subset(NASDAQ_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_6_returns))
+decile_NASDAQ_7_returns<-subset(NASDAQ_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_7_returns))
+decile_NASDAQ_8_returns<-subset(NASDAQ_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_8_returns))
+decile_NASDAQ_9_returns<-subset(NASDAQ_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_9_returns))
+decile_NASDAQ_10_returns<-subset(NASDAQ_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_10_returns))
+
+
+AMEX_Beta_Portfolios_Monthly_Returns<-read.csv("AMEX_Beta_Portfolios_Monthly_Returns.csv",header = TRUE)
+decile_AMEX_1_returns<-subset(AMEX_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_1_returns))
+decile_AMEX_2_returns<-subset(AMEX_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_2_returns))
+decile_AMEX_3_returns<-subset(AMEX_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_3_returns))
+decile_AMEX_4_returns<-subset(AMEX_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_4_returns))
+decile_AMEX_5_returns<-subset(AMEX_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_5_returns))
+decile_AMEX_6_returns<-subset(AMEX_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_6_returns))
+decile_AMEX_7_returns<-subset(AMEX_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_7_returns))
+decile_AMEX_8_returns<-subset(AMEX_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_8_returns))
+decile_AMEX_9_returns<-subset(AMEX_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_9_returns))
+decile_AMEX_10_returns<-subset(AMEX_Beta_Portfolios_Monthly_Returns,select=c(year,month,decline_10_returns))
+AMEX_Beta_Portfolios_Monthly_Returns$month<-as.numeric(AMEX_Beta_Portfolios_Monthly_Returns$month)
+AMEX_Beta_Portfolios_Monthly_Returns$year<-as.numeric(AMEX_Beta_Portfolios_Monthly_Returns$year)
+```
+# request for end of year beta deciles
+```{r}
+#beta portfolio 
+res <- dbSendQuery(wrds, "select * from crspa.dport6
+                   where date between '1980-01-01'
+                   and '2018-12-31'")
+amex_beta_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+head(amex_beta_data)
+
+#beta portfolio 
+res <- dbSendQuery(wrds, "select * from crspa.dport8
+                   where date between '1980-01-01'
+                   and '2018-12-31'")
+nasdaq_beta_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+head(nasdaq_beta_data)
+```
+```{r}
+crsp_data_v1$year<-as.numeric(crsp_data_v1$year)
+crsp_data_amex_beta_portfolio<-inner_join(crsp_data_v1,amex_beta_data,by = c("permno"="permno","year"="year"))
+crsp_data_amex_beta_portfolio<-subset(crsp_data_amex_beta_portfolio,select=-c(date.y,file))
+
+crsp_data_nasdaq_beta_portfolio<-inner_join(crsp_data_v1,nasdaq_beta_data ,by = c("permno"="permno","year"="year"))
+crsp_data_nasdaq_beta_portfolio<-subset(crsp_data_nasdaq_beta_portfolio,select=-c(date.y,file))
+crsp_data_with_beta_portfolio<-rbind(crsp_data_nasdaq_beta_portfolio,crsp_data_amex_beta_portfolio)
+
+# Rename
+crsp_data_with_beta_portfolio<-rename(crsp_data_with_beta_portfolio,date=date.x)
+head(crsp_data_with_beta_portfolio)
+```
+# Seperate Crsp data into their portfolios 
+```{r}
+crsp_data_with_beta_portfolio$year<-as.numeric(crsp_data_with_beta_portfolio$year)
+crsp_data_with_beta_portfolio$month<-as.numeric(crsp_data_with_beta_portfolio$month)
+# Seperate into NASDAQ vs NYSE and AMEX
+AMEX_data_with_beta_portfolios<- crsp_data_with_beta_portfolio%>%filter(hexcd==1 | hexcd==2)
+
+
+#filter into 10 seperate by beta portfolios
+AMEX_data_with_beta_portfolio_one<-AMEX_data_with_beta_portfolios%>%filter(betan==1)
+AMEX_data_with_beta_portfolio_two<-AMEX_data_with_beta_portfolios%>%filter(betan==2)
+AMEX_data_with_beta_portfolio_three<-AMEX_data_with_beta_portfolios%>%filter(betan==3)
+AMEX_data_with_beta_portfolio_four<-AMEX_data_with_beta_portfolios%>%filter(betan==4)
+AMEX_data_with_beta_portfolio_five<-AMEX_data_with_beta_portfolios%>%filter(betan==5)
+AMEX_data_with_beta_portfolio_six<-AMEX_data_with_beta_portfolios%>%filter(betan==6)
+AMEX_data_with_beta_portfolio_seven<-AMEX_data_with_beta_portfolios%>%filter(betan==7)
+AMEX_data_with_beta_portfolio_eight<-AMEX_data_with_beta_portfolios%>%filter(betan==8)
+AMEX_data_with_beta_portfolio_nine<-AMEX_data_with_beta_portfolios%>%filter(betan==9)
+AMEX_data_with_beta_portfolio_ten<-AMEX_data_with_beta_portfolios%>%filter(betan==10)
+
+
+NASDAQ_data_with_beta_portfolios<- crsp_data_with_beta_portfolio%>%filter(hexcd==3)
+#filter into 10 seperate by beta portfolios
+NASDAQ_data_with_beta_portfolio_one<-NASDAQ_data_with_beta_portfolios%>%filter(betan==1)
+NASDAQ_data_with_beta_portfolio_two<-NASDAQ_data_with_beta_portfolios%>%filter(betan==2)
+NASDAQ_data_with_beta_portfolio_three<-NASDAQ_data_with_beta_portfolios%>%filter(betan==3)
+NASDAQ_data_with_beta_portfolio_four<-NASDAQ_data_with_beta_portfolios%>%filter(betan==4)
+NASDAQ_data_with_beta_portfolio_five<-NASDAQ_data_with_beta_portfolios%>%filter(betan==5)
+NASDAQ_data_with_beta_portfolio_six<-NASDAQ_data_with_beta_portfolios%>%filter(betan==6)
+NASDAQ_data_with_beta_portfolio_seven<-NASDAQ_data_with_beta_portfolios%>%filter(betan==7)
+NASDAQ_data_with_beta_portfolio_eight<-NASDAQ_data_with_beta_portfolios%>%filter(betan==8)
+NASDAQ_data_with_beta_portfolio_nine<-NASDAQ_data_with_beta_portfolios%>%filter(betan==9)
+NASDAQ_data_with_beta_portfolio_ten<-NASDAQ_data_with_beta_portfolios%>%filter(betan==10)
+```
+# Merge the Beta Portfolio performance with the amex data 
+```{r}
+AMEX_data_with_beta_portfolio_one_merged<-inner_join(AMEX_data_with_beta_portfolio_one,decile_AMEX_1_returns, by = c('year'='year', 'month'='month'))
+AMEX_data_with_beta_portfolio_one_merged<-rename(AMEX_data_with_beta_portfolio_one_merged,benchmark_returns=decline_1_returns)
+
+AMEX_data_with_beta_portfolio_two_merged<-inner_join(AMEX_data_with_beta_portfolio_two,decile_AMEX_2_returns, by = c('year'='year', 'month'='month'))
+AMEX_data_with_beta_portfolio_two_merged<-rename(AMEX_data_with_beta_portfolio_two_merged,benchmark_returns=decline_2_returns)
+
+AMEX_data_with_beta_portfolio_three_merged<-inner_join(AMEX_data_with_beta_portfolio_three,decile_AMEX_3_returns, by = c('year'='year', 'month'='month'))
+AMEX_data_with_beta_portfolio_three_merged<-rename(AMEX_data_with_beta_portfolio_three_merged,benchmark_returns=decline_3_returns)
+
+AMEX_data_with_beta_portfolio_four_merged<-inner_join(AMEX_data_with_beta_portfolio_four,decile_AMEX_4_returns, by = c('year'='year', 'month'='month'))
+AMEX_data_with_beta_portfolio_four_merged<-rename(AMEX_data_with_beta_portfolio_four_merged,benchmark_returns=decline_4_returns)
+
+AMEX_data_with_beta_portfolio_five_merged<-inner_join(AMEX_data_with_beta_portfolio_five,decile_AMEX_5_returns, by = c('year'='year', 'month'='month'))
+AMEX_data_with_beta_portfolio_five_merged<-rename(AMEX_data_with_beta_portfolio_five_merged,benchmark_returns=decline_5_returns)
+
+AMEX_data_with_beta_portfolio_six_merged<-inner_join(AMEX_data_with_beta_portfolio_six,decile_AMEX_6_returns, by = c('year'='year', 'month'='month'))
+AMEX_data_with_beta_portfolio_six_merged<-rename(AMEX_data_with_beta_portfolio_six_merged,benchmark_returns=decline_6_returns)
+
+AMEX_data_with_beta_portfolio_seven_merged<-inner_join(AMEX_data_with_beta_portfolio_seven,decile_AMEX_7_returns, by = c('year'='year', 'month'='month'))
+AMEX_data_with_beta_portfolio_seven_merged<-rename(AMEX_data_with_beta_portfolio_seven_merged,benchmark_returns=decline_7_returns)
+
+AMEX_data_with_beta_portfolio_eight_merged<-inner_join(AMEX_data_with_beta_portfolio_eight,decile_AMEX_8_returns, by = c('year'='year', 'month'='month'))
+AMEX_data_with_beta_portfolio_eight_merged<-rename(AMEX_data_with_beta_portfolio_eight_merged,benchmark_returns=decline_8_returns)
+
+AMEX_data_with_beta_portfolio_nine_merged<-inner_join(AMEX_data_with_beta_portfolio_nine,decile_AMEX_9_returns, by = c('year'='year', 'month'='month'))
+AMEX_data_with_beta_portfolio_nine_merged<-rename(AMEX_data_with_beta_portfolio_nine_merged,benchmark_returns=decline_9_returns)
+
+AMEX_data_with_beta_portfolio_ten_merged<-inner_join(AMEX_data_with_beta_portfolio_ten,decile_AMEX_10_returns, by = c('year'='year', 'month'='month'))
+AMEX_data_with_beta_portfolio_ten_merged<-rename(AMEX_data_with_beta_portfolio_ten_merged,benchmark_returns=decline_10_returns)
+
+AMEX_data_with_beta_portfolio_returns<-rbind(AMEX_data_with_beta_portfolio_one_merged,AMEX_data_with_beta_portfolio_two_merged,
+                                             AMEX_data_with_beta_portfolio_three_merged,AMEX_data_with_beta_portfolio_four_merged,
+                                             AMEX_data_with_beta_portfolio_five_merged,AMEX_data_with_beta_portfolio_six_merged,
+                                             AMEX_data_with_beta_portfolio_seven_merged,AMEX_data_with_beta_portfolio_eight_merged,
+                                             AMEX_data_with_beta_portfolio_nine_merged,AMEX_data_with_beta_portfolio_ten_merged)
+AMEX_data_with_beta_portfolio_returns$excess_returns<-as.numeric(AMEX_data_with_beta_portfolio_returns$ret)-(as.numeric(AMEX_data_with_beta_portfolio_returns$benchmark_returns))
+head(AMEX_data_with_beta_portfolio_returns)
+```
+# Merge the Beta Portfolio performance with the NASDAQ data 
+```{r}
+NASDAQ_data_with_beta_portfolio_one_merged<-inner_join(NASDAQ_data_with_beta_portfolio_one,decile_NASDAQ_1_returns, by = c('year'='year', 'month'='month'))
+NASDAQ_data_with_beta_portfolio_one_merged<-rename(NASDAQ_data_with_beta_portfolio_one_merged,benchmark_returns=decline_1_returns)
+
+NASDAQ_data_with_beta_portfolio_two_merged<-inner_join(NASDAQ_data_with_beta_portfolio_two,decile_NASDAQ_2_returns, by = c('year'='year', 'month'='month'))
+NASDAQ_data_with_beta_portfolio_two_merged<-rename(NASDAQ_data_with_beta_portfolio_two_merged,benchmark_returns=decline_2_returns)
+
+NASDAQ_data_with_beta_portfolio_three_merged<-inner_join(NASDAQ_data_with_beta_portfolio_three,decile_NASDAQ_3_returns, by = c('year'='year', 'month'='month'))
+NASDAQ_data_with_beta_portfolio_three_merged<-rename(NASDAQ_data_with_beta_portfolio_three_merged,benchmark_returns=decline_3_returns)
+
+NASDAQ_data_with_beta_portfolio_four_merged<-inner_join(NASDAQ_data_with_beta_portfolio_four,decile_NASDAQ_4_returns, by = c('year'='year', 'month'='month'))
+NASDAQ_data_with_beta_portfolio_four_merged<-rename(NASDAQ_data_with_beta_portfolio_four_merged,benchmark_returns=decline_4_returns)
+
+NASDAQ_data_with_beta_portfolio_five_merged<-inner_join(NASDAQ_data_with_beta_portfolio_five,decile_NASDAQ_5_returns, by = c('year'='year', 'month'='month'))
+NASDAQ_data_with_beta_portfolio_five_merged<-rename(NASDAQ_data_with_beta_portfolio_five_merged,benchmark_returns=decline_5_returns)
+
+NASDAQ_data_with_beta_portfolio_six_merged<-inner_join(NASDAQ_data_with_beta_portfolio_six,decile_NASDAQ_6_returns, by = c('year'='year', 'month'='month'))
+NASDAQ_data_with_beta_portfolio_six_merged<-rename(NASDAQ_data_with_beta_portfolio_six_merged,benchmark_returns=decline_6_returns)
+
+NASDAQ_data_with_beta_portfolio_seven_merged<-inner_join(NASDAQ_data_with_beta_portfolio_seven,decile_NASDAQ_7_returns, by = c('year'='year', 'month'='month'))
+NASDAQ_data_with_beta_portfolio_seven_merged<-rename(NASDAQ_data_with_beta_portfolio_seven_merged,benchmark_returns=decline_7_returns)
+
+NASDAQ_data_with_beta_portfolio_eight_merged<-inner_join(NASDAQ_data_with_beta_portfolio_eight,decile_NASDAQ_8_returns, by = c('year'='year', 'month'='month'))
+NASDAQ_data_with_beta_portfolio_eight_merged<-rename(NASDAQ_data_with_beta_portfolio_eight_merged,benchmark_returns=decline_8_returns)
+
+NASDAQ_data_with_beta_portfolio_nine_merged<-inner_join(NASDAQ_data_with_beta_portfolio_nine,decile_NASDAQ_9_returns, by = c('year'='year', 'month'='month'))
+NASDAQ_data_with_beta_portfolio_nine_merged<-rename(NASDAQ_data_with_beta_portfolio_nine_merged,benchmark_returns=decline_9_returns)
+
+NASDAQ_data_with_beta_portfolio_ten_merged<-inner_join(NASDAQ_data_with_beta_portfolio_ten,decile_NASDAQ_10_returns, by = c('year'='year', 'month'='month'))
+NASDAQ_data_with_beta_portfolio_ten_merged<-rename(NASDAQ_data_with_beta_portfolio_ten_merged,benchmark_returns=decline_10_returns)
+
+NASDAQ_data_with_beta_portfolio_returns<-rbind(NASDAQ_data_with_beta_portfolio_one_merged,NASDAQ_data_with_beta_portfolio_two_merged,
+                                             NASDAQ_data_with_beta_portfolio_three_merged,NASDAQ_data_with_beta_portfolio_four_merged,
+                                             NASDAQ_data_with_beta_portfolio_five_merged,NASDAQ_data_with_beta_portfolio_six_merged,
+                                             NASDAQ_data_with_beta_portfolio_seven_merged,NASDAQ_data_with_beta_portfolio_eight_merged,
+                                             NASDAQ_data_with_beta_portfolio_nine_merged,NASDAQ_data_with_beta_portfolio_ten_merged)
+
+NASDAQ_data_with_beta_portfolio_returns$excess_returns<-as.numeric(NASDAQ_data_with_beta_portfolio_returns$ret)-as.numeric(NASDAQ_data_with_beta_portfolio_returns$benchmark_returns)
+head(NASDAQ_data_with_beta_portfolio_returns)
+```
+# Bind the portfolios
+```{r}
+crsp_data_with_beta_portfolio_returns<-rbind(AMEX_data_with_beta_portfolio_returns,NASDAQ_data_with_beta_portfolio_returns)
+write.csv(crsp_data_with_beta_portfolio_returns,"crsp_data_with_beta_portfolio_returns.csv")
+```
+
