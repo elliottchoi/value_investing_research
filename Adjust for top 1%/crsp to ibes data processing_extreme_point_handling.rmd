@@ -368,7 +368,7 @@ Begin to Quartile the Data
 # We want to segment the data by only the january values of t 
 quartile_month_full_database<- t_full_database %>% filter(month_of_analyst_forecast ==1)
 quartile_month_full_database<-na.omit(quartile_month_full_database)
-col_order <- c("year_of_analyst_forecast", "month_of_analyst_forecast", "permno","ticker","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_analyst_predictions","forecast_end_period","analys","f_eps","scaled_feps","forecast_standard_deviation","market_capitalization","exchange",'t')
+col_order <- c("year_of_analyst_forecast", "month_of_analyst_forecast", "permno","ticker","monthly_returns","price","shares_outstanding","volume","benchmark_returns","excess_returns","actual_annual_eps","number_of_analyst_predictions","forecast_end_period","analys","f_eps","scaled_feps","forecast_standard_deviation","market_capitalization","exchange",'t','bull')
 quartile_month_full_database<- quartile_month_full_database[,col_order]
 # Take only one row per company/data
 quartile_month_full_database<- quartile_month_full_database %>% distinct(ticker,month_of_analyst_forecast,.keep_all=TRUE)
@@ -400,6 +400,11 @@ Creation of the dataset quartiled (using only distinct data)
 ```{r}
 #Put this code in only if you want to adjust the "average " number of analysts 
 t_distinct_FULL_DATABASE <- t_distinct_FULL_DATABASE%>%group_by(ticker,forecast_end_period)%>%mutate(max_number_of_analyst_predictions=max(number_of_analyst_predictions))
+t_distinct_FULL_DATABASE$max_number_of_analyst_predictions<-as.numeric(t_distinct_FULL_DATABASE$max_number_of_analyst_predictions)
+t_distinct_FULL_DATABASE$forecasted_earnings<-as.numeric(t_distinct_FULL_DATABASE$forecasted_earnings)
+t_distinct_FULL_DATABASE$scaled_feps<-as.numeric(t_distinct_FULL_DATABASE$scaled_feps)
+t_distinct_FULL_DATABASE$forecast_standard_deviation<-as.numeric(t_distinct_FULL_DATABASE$forecast_standard_deviation)
+
 # In order for quartiles to work, we need to have a minimum of 4 companies per year 
 t_distinct_FULL_DATABASE<- t_distinct_FULL_DATABASE%>%group_by(year_of_analyst_forecast)%>%mutate(number_of_companies=n_distinct(ticker))
 t_distinct_FULL_DATABASE <- t_distinct_FULL_DATABASE %>% filter(number_of_companies>=4)
@@ -1503,7 +1508,6 @@ chi_squared_excess_returns_bull_quartile_one_analyst_following<-chisq.test(quart
 chi_squared_excess_returns_bull_quartile_two_analyst_following<-chisq.test(quartile_two$excess_returns,quartile_two$month_of_analyst_forecast)
 chi_squared_excess_returns_bull_quartile_three_analyst_following<-chisq.test(quartile_three$excess_returns,quartile_three$month_of_analyst_forecast)
 chi_squared_excess_returns_bull_quartile_four_analyst_following<-chisq.test(quartile_four$excess_returns,quartile_four$month_of_analyst_forecast)
-
 
 #################################################################################################################################################################################################################################
 
@@ -3582,6 +3586,1243 @@ excess_return_regression_p_stat_table_1997_2018_by_analyst_following[16,5]<-chi_
 write.csv(excess_return_regression_coeff_table_1997_2018_by_analyst_following,"excess_return_regression_coeff_table_1997_2018_by_analyst_following.csv")
 write.csv(excess_return_regression_t_stat_table_1997_2018_by_analyst_following,"excess_return_regression_t_stat_table_1997_2018_by_analyst_following.csv")
 write.csv(excess_return_regression_p_stat_table_1997_2018_by_analyst_following,"excess_return_regression_p_stat_table_1997_2018_by_analyst_following.csv")
+```
+Excess Returns Bear by Analyst Following
+```{r}
+x <- c("Overall","Q1(Low)","Q2","Q3","Q4(High)")
+y <- c('January','February','March','April','May','June','July','August','September','October','November','December')
+z <- c('January','February','March','April','May','June','July','August','September','October','November','December','F_Statistic','F_Statistic-P','Chi-Squared_Test','Chi-Square-P')
+# Creation of the coefficent table 
+excess_return_regression_coeff_table_bear_by_analyst_following<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(excess_return_regression_coeff_table_bear_by_analyst_following) <- x
+rownames(excess_return_regression_coeff_table_bear_by_analyst_following)<-y
+# Creation of the t_stat_table 
+excess_return_regression_t_stat_table_bear_by_analyst_following<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(excess_return_regression_t_stat_table_bear_by_analyst_following) <- x
+rownames(excess_return_regression_t_stat_table_bear_by_analyst_following)<-y
+# Creation of the p_stat_table 
+excess_return_regression_p_stat_table_bear_by_analyst_following<- data.frame(matrix(ncol = 5, nrow = 16))
+colnames(excess_return_regression_p_stat_table_bear_by_analyst_following) <- x
+rownames(excess_return_regression_p_stat_table_bear_by_analyst_following)<-z
+# Overall
+temp_coeff<-coef(excess_returns_full_database_bear_regression_model)
+temp_t_stat<-summary(excess_returns_full_database_bear_regression_model)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_full_database_bear_regression_model)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_analyst_following[index,1]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_analyst_following[index,1]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_analyst_following[index,1]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_full_database_bear_regression_model)$fstatistic[1],
+                 summary(excess_returns_full_database_bear_regression_model)$fstatistic[2],
+                 summary(excess_returns_full_database_bear_regression_model)$fstatistic[3]))
+# Add the overall Stats
+excess_return_regression_p_stat_table_bear_by_analyst_following[13,1]<-summary(excess_returns_full_database_bear_regression_model)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_analyst_following[14,1]<- p_value
+excess_return_regression_p_stat_table_bear_by_analyst_following[15,1]<-chi_squared_excess_returns_bear[1]
+excess_return_regression_p_stat_table_bear_by_analyst_following[16,1]<-chi_squared_excess_returns_bear[3]
+# Quartile One
+temp_coeff<-coef(excess_returns_bear_quartile_one_analyst_following)
+temp_t_stat<-summary(excess_returns_bear_quartile_one_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bear_quartile_one_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_analyst_following[index,2]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_analyst_following[index,2]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_analyst_following[index,2]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bear_quartile_one_analyst_following)$fstatistic[1],
+                 summary(excess_returns_bear_quartile_one_analyst_following)$fstatistic[2],
+                 summary(excess_returns_bear_quartile_one_analyst_following)$fstatistic[3]))
+excess_return_regression_p_stat_table_bear_by_analyst_following[13,2]<-summary(excess_returns_bear_quartile_one_analyst_following)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_analyst_following[14,2]<- p_value
+excess_return_regression_p_stat_table_bear_by_analyst_following[15,2]<-chi_squared_excess_returns_bear_quartile_one_analyst_following[1]
+excess_return_regression_p_stat_table_bear_by_analyst_following[16,2]<-chi_squared_excess_returns_bear_quartile_one_analyst_following[3]
+# Quartile two
+temp_coeff<-coef(excess_returns_bear_quartile_two_analyst_following)
+temp_t_stat<-summary(excess_returns_bear_quartile_two_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bear_quartile_two_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_analyst_following[index,3]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_analyst_following[index,3]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_analyst_following[index,3]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bear_quartile_two_analyst_following)$fstatistic[1],
+                 summary(excess_returns_bear_quartile_two_analyst_following)$fstatistic[2],
+                 summary(excess_returns_bear_quartile_two_analyst_following)$fstatistic[3]))
+excess_return_regression_p_stat_table_bear_by_analyst_following[13,3]<-summary(excess_returns_bear_quartile_two_analyst_following)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_analyst_following[14,3]<- p_value
+excess_return_regression_p_stat_table_bear_by_analyst_following[15,3]<-chi_squared_excess_returns_bear_quartile_two_analyst_following[1]
+excess_return_regression_p_stat_table_bear_by_analyst_following[16,3]<-chi_squared_excess_returns_bear_quartile_two_analyst_following[3]
+# Quartile Three
+temp_coeff<-coef(excess_returns_bear_quartile_three_analyst_following)
+temp_t_stat<-summary(excess_returns_bear_quartile_three_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bear_quartile_three_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_analyst_following[index,4]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_analyst_following[index,4]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_analyst_following[index,4]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bear_quartile_three_analyst_following)$fstatistic[1],
+                 summary(excess_returns_bear_quartile_three_analyst_following)$fstatistic[2],
+                 summary(excess_returns_bear_quartile_three_analyst_following)$fstatistic[3]))
+excess_return_regression_p_stat_table_bear_by_analyst_following[13,4]<-summary(excess_returns_bear_quartile_three_analyst_following)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_analyst_following[14,4]<- p_value
+excess_return_regression_p_stat_table_bear_by_analyst_following[15,4]<-chi_squared_excess_returns_bear_quartile_three_analyst_following[1]
+excess_return_regression_p_stat_table_bear_by_analyst_following[16,4]<-chi_squared_excess_returns_bear_quartile_three_analyst_following[3]
+# Quartile Four
+temp_coeff<-coef(excess_returns_bear_quartile_four_analyst_following)
+temp_t_stat<-summary(excess_returns_bear_quartile_four_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bear_quartile_four_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_analyst_following[index,5]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_analyst_following[index,5]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_analyst_following[index,5]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bear_quartile_four_analyst_following)$fstatistic[1],
+                 summary(excess_returns_bear_quartile_four_analyst_following)$fstatistic[2],
+                 summary(excess_returns_bear_quartile_four_analyst_following)$fstatistic[3]))
+excess_return_regression_p_stat_table_bear_by_analyst_following[13,5]<-summary(excess_returns_bear_quartile_four_analyst_following)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_analyst_following[14,5]<-p_value
+excess_return_regression_p_stat_table_bear_by_analyst_following[15,5]<-chi_squared_excess_returns_bear_quartile_four_analyst_following[1]
+excess_return_regression_p_stat_table_bear_by_analyst_following[16,5]<-chi_squared_excess_returns_bear_quartile_four_analyst_following[3]
+
+write.csv(excess_return_regression_coeff_table_bear_by_analyst_following,"excess_return_regression_coeff_table_bear_by_analyst_following.csv")
+write.csv(excess_return_regression_t_stat_table_bear_by_analyst_following,"excess_return_regression_t_stat_table_bear_by_analyst_following.csv")
+write.csv(excess_return_regression_p_stat_table_bear_by_analyst_following,"excess_return_regression_p_stat_table_bear_by_analyst_following.csv")
+```
+Excess Returns Bear by market cap
+```{r}
+x <- c("Overall","Q1(Low)","Q2","Q3","Q4(High)")
+y <- c('January','February','March','April','May','June','July','August','September','October','November','December')
+z <- c('January','February','March','April','May','June','July','August','September','October','November','December','F_Statistic','F_Statistic-P','Chi-Squared_Test','Chi-Square-P')
+# Creation of the coefficent table 
+excess_return_regression_coeff_table_bear_by_mc<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(excess_return_regression_coeff_table_bear_by_mc) <- x
+rownames(excess_return_regression_coeff_table_bear_by_mc)<-y
+# Creation of the t_stat_table 
+excess_return_regression_t_stat_table_bear_by_mc<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(excess_return_regression_t_stat_table_bear_by_mc) <- x
+rownames(excess_return_regression_t_stat_table_bear_by_mc)<-y
+# Creation of the p_stat_table 
+excess_return_regression_p_stat_table_bear_by_mc<- data.frame(matrix(ncol = 5, nrow = 16))
+colnames(excess_return_regression_p_stat_table_bear_by_mc) <- x
+rownames(excess_return_regression_p_stat_table_bear_by_mc)<-z
+# Overall
+temp_coeff<-coef(excess_returns_full_database_bear_regression_model)
+temp_t_stat<-summary(excess_returns_full_database_bear_regression_model)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_full_database_bear_regression_model)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_mc[index,1]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_mc[index,1]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_mc[index,1]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_full_database_bear_regression_model)$fstatistic[1],
+                 summary(excess_returns_full_database_bear_regression_model)$fstatistic[2],
+                 summary(excess_returns_full_database_bear_regression_model)$fstatistic[3]))
+# Add the overall Stats
+excess_return_regression_p_stat_table_bear_by_mc[13,1]<-summary(excess_returns_full_database_bear_regression_model)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_mc[14,1]<- p_value
+excess_return_regression_p_stat_table_bear_by_mc[15,1]<-chi_squared_excess_returns_bear[1]
+excess_return_regression_p_stat_table_bear_by_mc[16,1]<-chi_squared_excess_returns_bear[3]
+# Quartile One
+temp_coeff<-coef(excess_returns_bear_quartile_one_mc)
+temp_t_stat<-summary(excess_returns_bear_quartile_one_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bear_quartile_one_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_mc[index,2]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_mc[index,2]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_mc[index,2]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bear_quartile_one_mc)$fstatistic[1],
+                 summary(excess_returns_bear_quartile_one_mc)$fstatistic[2],
+                 summary(excess_returns_bear_quartile_one_mc)$fstatistic[3]))
+excess_return_regression_p_stat_table_bear_by_mc[13,2]<-summary(excess_returns_bear_quartile_one_mc)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_mc[14,2]<- p_value
+excess_return_regression_p_stat_table_bear_by_mc[15,2]<-chi_squared_excess_returns_bear_quartile_one_mc[1]
+excess_return_regression_p_stat_table_bear_by_mc[16,2]<-chi_squared_excess_returns_bear_quartile_one_mc[3]
+# Quartile two
+temp_coeff<-coef(excess_returns_bear_quartile_two_mc)
+temp_t_stat<-summary(excess_returns_bear_quartile_two_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bear_quartile_two_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_mc[index,3]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_mc[index,3]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_mc[index,3]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bear_quartile_two_mc)$fstatistic[1],
+                 summary(excess_returns_bear_quartile_two_mc)$fstatistic[2],
+                 summary(excess_returns_bear_quartile_two_mc)$fstatistic[3]))
+excess_return_regression_p_stat_table_bear_by_mc[13,3]<-summary(excess_returns_bear_quartile_two_mc)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_mc[14,3]<- p_value
+excess_return_regression_p_stat_table_bear_by_mc[15,3]<-chi_squared_excess_returns_bear_quartile_two_mc[1]
+excess_return_regression_p_stat_table_bear_by_mc[16,3]<-chi_squared_excess_returns_bear_quartile_two_mc[3]
+# Quartile Three
+temp_coeff<-coef(excess_returns_bear_quartile_three_mc)
+temp_t_stat<-summary(excess_returns_bear_quartile_three_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bear_quartile_three_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_mc[index,4]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_mc[index,4]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_mc[index,4]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bear_quartile_three_mc)$fstatistic[1],
+                 summary(excess_returns_bear_quartile_three_mc)$fstatistic[2],
+                 summary(excess_returns_bear_quartile_three_mc)$fstatistic[3]))
+excess_return_regression_p_stat_table_bear_by_mc[13,4]<-summary(excess_returns_bear_quartile_three_mc)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_mc[14,4]<- p_value
+excess_return_regression_p_stat_table_bear_by_mc[15,4]<-chi_squared_excess_returns_bear_quartile_three_mc[1]
+excess_return_regression_p_stat_table_bear_by_mc[16,4]<-chi_squared_excess_returns_bear_quartile_three_mc[3]
+# Quartile Four
+temp_coeff<-coef(excess_returns_bear_quartile_four_mc)
+temp_t_stat<-summary(excess_returns_bear_quartile_four_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bear_quartile_four_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_mc[index,5]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_mc[index,5]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_mc[index,5]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bear_quartile_four_mc)$fstatistic[1],
+                 summary(excess_returns_bear_quartile_four_mc)$fstatistic[2],
+                 summary(excess_returns_bear_quartile_four_mc)$fstatistic[3]))
+excess_return_regression_p_stat_table_bear_by_mc[13,5]<-summary(excess_returns_bear_quartile_four_mc)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_mc[14,5]<-p_value
+excess_return_regression_p_stat_table_bear_by_mc[15,5]<-chi_squared_excess_returns_bear_quartile_four_mc[1]
+excess_return_regression_p_stat_table_bear_by_mc[16,5]<-chi_squared_excess_returns_bear_quartile_four_mc[3]
+
+write.csv(excess_return_regression_coeff_table_bear_by_mc,"excess_return_regression_coeff_table_bear_by_mc.csv")
+write.csv(excess_return_regression_t_stat_table_bear_by_mc,"excess_return_regression_t_stat_table_bear_by_mc.csv")
+write.csv(excess_return_regression_p_stat_table_bear_by_mc,"excess_return_regression_p_stat_table_bear_by_mc.csv")
+```
+Excess Returns Bear by feps
+```{r}
+x <- c("Overall","Q1(Low)","Q2","Q3","Q4(High)")
+y <- c('January','February','March','April','May','June','July','August','September','October','November','December')
+z <- c('January','February','March','April','May','June','July','August','September','October','November','December','F_Statistic','F_Statistic-P','Chi-Squared_Test','Chi-Square-P')
+# Creation of the coefficent table 
+excess_return_regression_coeff_table_bear_by_feps<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(excess_return_regression_coeff_table_bear_by_feps) <- x
+rownames(excess_return_regression_coeff_table_bear_by_feps)<-y
+# Creation of the t_stat_table 
+excess_return_regression_t_stat_table_bear_by_feps<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(excess_return_regression_t_stat_table_bear_by_feps) <- x
+rownames(excess_return_regression_t_stat_table_bear_by_feps)<-y
+# Creation of the p_stat_table 
+excess_return_regression_p_stat_table_bear_by_feps<- data.frame(matrix(ncol = 5, nrow = 16))
+colnames(excess_return_regression_p_stat_table_bear_by_feps) <- x
+rownames(excess_return_regression_p_stat_table_bear_by_feps)<-z
+# Overall
+temp_coeff<-coef(excess_returns_full_database_bear_regression_model)
+temp_t_stat<-summary(excess_returns_full_database_bear_regression_model)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_full_database_bear_regression_model)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_feps[index,1]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_feps[index,1]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_feps[index,1]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_full_database_bear_regression_model)$fstatistic[1],
+                 summary(excess_returns_full_database_bear_regression_model)$fstatistic[2],
+                 summary(excess_returns_full_database_bear_regression_model)$fstatistic[3]))
+# Add the overall Stats
+excess_return_regression_p_stat_table_bear_by_feps[13,1]<-summary(excess_returns_full_database_bear_regression_model)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_feps[14,1]<- p_value
+excess_return_regression_p_stat_table_bear_by_feps[15,1]<-chi_squared_excess_returns_bear[1]
+excess_return_regression_p_stat_table_bear_by_feps[16,1]<-chi_squared_excess_returns_bear[3]
+# Quartile One
+temp_coeff<-coef(excess_returns_bear_quartile_one_feps)
+temp_t_stat<-summary(excess_returns_bear_quartile_one_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bear_quartile_one_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_feps[index,2]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_feps[index,2]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_feps[index,2]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bear_quartile_one_feps)$fstatistic[1],
+                 summary(excess_returns_bear_quartile_one_feps)$fstatistic[2],
+                 summary(excess_returns_bear_quartile_one_feps)$fstatistic[3]))
+excess_return_regression_p_stat_table_bear_by_feps[13,2]<-summary(excess_returns_bear_quartile_one_feps)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_feps[14,2]<- p_value
+excess_return_regression_p_stat_table_bear_by_feps[15,2]<-chi_squared_excess_returns_bear_quartile_one_feps[1]
+excess_return_regression_p_stat_table_bear_by_feps[16,2]<-chi_squared_excess_returns_bear_quartile_one_feps[3]
+# Quartile two
+temp_coeff<-coef(excess_returns_bear_quartile_two_feps)
+temp_t_stat<-summary(excess_returns_bear_quartile_two_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bear_quartile_two_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_feps[index,3]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_feps[index,3]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_feps[index,3]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bear_quartile_two_feps)$fstatistic[1],
+                 summary(excess_returns_bear_quartile_two_feps)$fstatistic[2],
+                 summary(excess_returns_bear_quartile_two_feps)$fstatistic[3]))
+excess_return_regression_p_stat_table_bear_by_feps[13,3]<-summary(excess_returns_bear_quartile_two_feps)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_feps[14,3]<- p_value
+excess_return_regression_p_stat_table_bear_by_feps[15,3]<-chi_squared_excess_returns_bear_quartile_two_feps[1]
+excess_return_regression_p_stat_table_bear_by_feps[16,3]<-chi_squared_excess_returns_bear_quartile_two_feps[3]
+# Quartile Three
+temp_coeff<-coef(excess_returns_bear_quartile_three_feps)
+temp_t_stat<-summary(excess_returns_bear_quartile_three_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bear_quartile_three_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_feps[index,4]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_feps[index,4]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_feps[index,4]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bear_quartile_three_feps)$fstatistic[1],
+                 summary(excess_returns_bear_quartile_three_feps)$fstatistic[2],
+                 summary(excess_returns_bear_quartile_three_feps)$fstatistic[3]))
+excess_return_regression_p_stat_table_bear_by_feps[13,4]<-summary(excess_returns_bear_quartile_three_feps)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_feps[14,4]<- p_value
+excess_return_regression_p_stat_table_bear_by_feps[15,4]<-chi_squared_excess_returns_bear_quartile_three_feps[1]
+excess_return_regression_p_stat_table_bear_by_feps[16,4]<-chi_squared_excess_returns_bear_quartile_three_feps[3]
+# Quartile Four
+temp_coeff<-coef(excess_returns_bear_quartile_four_feps)
+temp_t_stat<-summary(excess_returns_bear_quartile_four_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bear_quartile_four_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bear_by_feps[index,5]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bear_by_feps[index,5]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bear_by_feps[index,5]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bear_quartile_four_feps)$fstatistic[1],
+                 summary(excess_returns_bear_quartile_four_feps)$fstatistic[2],
+                 summary(excess_returns_bear_quartile_four_feps)$fstatistic[3]))
+excess_return_regression_p_stat_table_bear_by_feps[13,5]<-summary(excess_returns_bear_quartile_four_feps)$fstatistic[1]
+excess_return_regression_p_stat_table_bear_by_feps[14,5]<-p_value
+excess_return_regression_p_stat_table_bear_by_feps[15,5]<-chi_squared_excess_returns_bear_quartile_four_feps[1]
+excess_return_regression_p_stat_table_bear_by_feps[16,5]<-chi_squared_excess_returns_bear_quartile_four_feps[3]
+
+write.csv(excess_return_regression_coeff_table_bear_by_feps,"excess_return_regression_coeff_table_bear_by_feps.csv")
+write.csv(excess_return_regression_t_stat_table_bear_by_feps,"excess_return_regression_t_stat_table_bear_by_feps.csv")
+write.csv(excess_return_regression_p_stat_table_bear_by_feps,"excess_return_regression_p_stat_table_bear_by_feps.csv")
+```
+Excess Returns bull by Analyst Following
+```{r}
+x <- c("Overall","Q1(Low)","Q2","Q3","Q4(High)")
+y <- c('January','February','March','April','May','June','July','August','September','October','November','December')
+z <- c('January','February','March','April','May','June','July','August','September','October','November','December','F_Statistic','F_Statistic-P','Chi-Squared_Test','Chi-Square-P')
+# Creation of the coefficent table 
+excess_return_regression_coeff_table_bull_by_analyst_following<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(excess_return_regression_coeff_table_bull_by_analyst_following) <- x
+rownames(excess_return_regression_coeff_table_bull_by_analyst_following)<-y
+# Creation of the t_stat_table 
+excess_return_regression_t_stat_table_bull_by_analyst_following<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(excess_return_regression_t_stat_table_bull_by_analyst_following) <- x
+rownames(excess_return_regression_t_stat_table_bull_by_analyst_following)<-y
+# Creation of the p_stat_table 
+excess_return_regression_p_stat_table_bull_by_analyst_following<- data.frame(matrix(ncol = 5, nrow = 16))
+colnames(excess_return_regression_p_stat_table_bull_by_analyst_following) <- x
+rownames(excess_return_regression_p_stat_table_bull_by_analyst_following)<-z
+# Overall
+temp_coeff<-coef(excess_returns_full_database_bull_regression_model)
+temp_t_stat<-summary(excess_returns_full_database_bull_regression_model)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_full_database_bull_regression_model)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_analyst_following[index,1]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_analyst_following[index,1]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_analyst_following[index,1]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_full_database_bull_regression_model)$fstatistic[1],
+                 summary(excess_returns_full_database_bull_regression_model)$fstatistic[2],
+                 summary(excess_returns_full_database_bull_regression_model)$fstatistic[3]))
+# Add the overall Stats
+excess_return_regression_p_stat_table_bull_by_analyst_following[13,1]<-summary(excess_returns_full_database_bull_regression_model)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_analyst_following[14,1]<- p_value
+excess_return_regression_p_stat_table_bull_by_analyst_following[15,1]<-chi_squared_excess_returns_bull[1]
+excess_return_regression_p_stat_table_bull_by_analyst_following[16,1]<-chi_squared_excess_returns_bull[3]
+# Quartile One
+temp_coeff<-coef(excess_returns_bull_quartile_one_analyst_following)
+temp_t_stat<-summary(excess_returns_bull_quartile_one_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bull_quartile_one_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_analyst_following[index,2]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_analyst_following[index,2]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_analyst_following[index,2]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bull_quartile_one_analyst_following)$fstatistic[1],
+                 summary(excess_returns_bull_quartile_one_analyst_following)$fstatistic[2],
+                 summary(excess_returns_bull_quartile_one_analyst_following)$fstatistic[3]))
+excess_return_regression_p_stat_table_bull_by_analyst_following[13,2]<-summary(excess_returns_bull_quartile_one_analyst_following)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_analyst_following[14,2]<- p_value
+excess_return_regression_p_stat_table_bull_by_analyst_following[15,2]<-chi_squared_excess_returns_bull_quartile_one_analyst_following[1]
+excess_return_regression_p_stat_table_bull_by_analyst_following[16,2]<-chi_squared_excess_returns_bull_quartile_one_analyst_following[3]
+# Quartile two
+temp_coeff<-coef(excess_returns_bull_quartile_two_analyst_following)
+temp_t_stat<-summary(excess_returns_bull_quartile_two_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bull_quartile_two_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_analyst_following[index,3]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_analyst_following[index,3]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_analyst_following[index,3]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bull_quartile_two_analyst_following)$fstatistic[1],
+                 summary(excess_returns_bull_quartile_two_analyst_following)$fstatistic[2],
+                 summary(excess_returns_bull_quartile_two_analyst_following)$fstatistic[3]))
+excess_return_regression_p_stat_table_bull_by_analyst_following[13,3]<-summary(excess_returns_bull_quartile_two_analyst_following)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_analyst_following[14,3]<- p_value
+excess_return_regression_p_stat_table_bull_by_analyst_following[15,3]<-chi_squared_excess_returns_bull_quartile_two_analyst_following[1]
+excess_return_regression_p_stat_table_bull_by_analyst_following[16,3]<-chi_squared_excess_returns_bull_quartile_two_analyst_following[3]
+# Quartile Three
+temp_coeff<-coef(excess_returns_bull_quartile_three_analyst_following)
+temp_t_stat<-summary(excess_returns_bull_quartile_three_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bull_quartile_three_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_analyst_following[index,4]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_analyst_following[index,4]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_analyst_following[index,4]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bull_quartile_three_analyst_following)$fstatistic[1],
+                 summary(excess_returns_bull_quartile_three_analyst_following)$fstatistic[2],
+                 summary(excess_returns_bull_quartile_three_analyst_following)$fstatistic[3]))
+excess_return_regression_p_stat_table_bull_by_analyst_following[13,4]<-summary(excess_returns_bull_quartile_three_analyst_following)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_analyst_following[14,4]<- p_value
+excess_return_regression_p_stat_table_bull_by_analyst_following[15,4]<-chi_squared_excess_returns_bull_quartile_three_analyst_following[1]
+excess_return_regression_p_stat_table_bull_by_analyst_following[16,4]<-chi_squared_excess_returns_bull_quartile_three_analyst_following[3]
+# Quartile Four
+temp_coeff<-coef(excess_returns_bull_quartile_four_analyst_following)
+temp_t_stat<-summary(excess_returns_bull_quartile_four_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bull_quartile_four_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_analyst_following[index,5]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_analyst_following[index,5]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_analyst_following[index,5]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bull_quartile_four_analyst_following)$fstatistic[1],
+                 summary(excess_returns_bull_quartile_four_analyst_following)$fstatistic[2],
+                 summary(excess_returns_bull_quartile_four_analyst_following)$fstatistic[3]))
+excess_return_regression_p_stat_table_bull_by_analyst_following[13,5]<-summary(excess_returns_bull_quartile_four_analyst_following)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_analyst_following[14,5]<-p_value
+excess_return_regression_p_stat_table_bull_by_analyst_following[15,5]<-chi_squared_excess_returns_bull_quartile_four_analyst_following[1]
+excess_return_regression_p_stat_table_bull_by_analyst_following[16,5]<-chi_squared_excess_returns_bull_quartile_four_analyst_following[3]
+
+write.csv(excess_return_regression_coeff_table_bull_by_analyst_following,"excess_return_regression_coeff_table_bull_by_analyst_following.csv")
+write.csv(excess_return_regression_t_stat_table_bull_by_analyst_following,"excess_return_regression_t_stat_table_bull_by_analyst_following.csv")
+write.csv(excess_return_regression_p_stat_table_bull_by_analyst_following,"excess_return_regression_p_stat_table_bull_by_analyst_following.csv")
+```
+Excess Returns bull by market cap
+```{r}
+x <- c("Overall","Q1(Low)","Q2","Q3","Q4(High)")
+y <- c('January','February','March','April','May','June','July','August','September','October','November','December')
+z <- c('January','February','March','April','May','June','July','August','September','October','November','December','F_Statistic','F_Statistic-P','Chi-Squared_Test','Chi-Square-P')
+# Creation of the coefficent table 
+excess_return_regression_coeff_table_bull_by_mc<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(excess_return_regression_coeff_table_bull_by_mc) <- x
+rownames(excess_return_regression_coeff_table_bull_by_mc)<-y
+# Creation of the t_stat_table 
+excess_return_regression_t_stat_table_bull_by_mc<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(excess_return_regression_t_stat_table_bull_by_mc) <- x
+rownames(excess_return_regression_t_stat_table_bull_by_mc)<-y
+# Creation of the p_stat_table 
+excess_return_regression_p_stat_table_bull_by_mc<- data.frame(matrix(ncol = 5, nrow = 16))
+colnames(excess_return_regression_p_stat_table_bull_by_mc) <- x
+rownames(excess_return_regression_p_stat_table_bull_by_mc)<-z
+# Overall
+temp_coeff<-coef(excess_returns_full_database_bull_regression_model)
+temp_t_stat<-summary(excess_returns_full_database_bull_regression_model)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_full_database_bull_regression_model)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_mc[index,1]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_mc[index,1]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_mc[index,1]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_full_database_bull_regression_model)$fstatistic[1],
+                 summary(excess_returns_full_database_bull_regression_model)$fstatistic[2],
+                 summary(excess_returns_full_database_bull_regression_model)$fstatistic[3]))
+# Add the overall Stats
+excess_return_regression_p_stat_table_bull_by_mc[13,1]<-summary(excess_returns_full_database_bull_regression_model)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_mc[14,1]<- p_value
+excess_return_regression_p_stat_table_bull_by_mc[15,1]<-chi_squared_excess_returns_bull[1]
+excess_return_regression_p_stat_table_bull_by_mc[16,1]<-chi_squared_excess_returns_bull[3]
+# Quartile One
+temp_coeff<-coef(excess_returns_bull_quartile_one_mc)
+temp_t_stat<-summary(excess_returns_bull_quartile_one_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bull_quartile_one_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_mc[index,2]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_mc[index,2]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_mc[index,2]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bull_quartile_one_mc)$fstatistic[1],
+                 summary(excess_returns_bull_quartile_one_mc)$fstatistic[2],
+                 summary(excess_returns_bull_quartile_one_mc)$fstatistic[3]))
+excess_return_regression_p_stat_table_bull_by_mc[13,2]<-summary(excess_returns_bull_quartile_one_mc)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_mc[14,2]<- p_value
+excess_return_regression_p_stat_table_bull_by_mc[15,2]<-chi_squared_excess_returns_bull_quartile_one_mc[1]
+excess_return_regression_p_stat_table_bull_by_mc[16,2]<-chi_squared_excess_returns_bull_quartile_one_mc[3]
+# Quartile two
+temp_coeff<-coef(excess_returns_bull_quartile_two_mc)
+temp_t_stat<-summary(excess_returns_bull_quartile_two_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bull_quartile_two_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_mc[index,3]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_mc[index,3]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_mc[index,3]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bull_quartile_two_mc)$fstatistic[1],
+                 summary(excess_returns_bull_quartile_two_mc)$fstatistic[2],
+                 summary(excess_returns_bull_quartile_two_mc)$fstatistic[3]))
+excess_return_regression_p_stat_table_bull_by_mc[13,3]<-summary(excess_returns_bull_quartile_two_mc)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_mc[14,3]<- p_value
+excess_return_regression_p_stat_table_bull_by_mc[15,3]<-chi_squared_excess_returns_bull_quartile_two_mc[1]
+excess_return_regression_p_stat_table_bull_by_mc[16,3]<-chi_squared_excess_returns_bull_quartile_two_mc[3]
+# Quartile Three
+temp_coeff<-coef(excess_returns_bull_quartile_three_mc)
+temp_t_stat<-summary(excess_returns_bull_quartile_three_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bull_quartile_three_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_mc[index,4]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_mc[index,4]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_mc[index,4]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bull_quartile_three_mc)$fstatistic[1],
+                 summary(excess_returns_bull_quartile_three_mc)$fstatistic[2],
+                 summary(excess_returns_bull_quartile_three_mc)$fstatistic[3]))
+excess_return_regression_p_stat_table_bull_by_mc[13,4]<-summary(excess_returns_bull_quartile_three_mc)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_mc[14,4]<- p_value
+excess_return_regression_p_stat_table_bull_by_mc[15,4]<-chi_squared_excess_returns_bull_quartile_three_mc[1]
+excess_return_regression_p_stat_table_bull_by_mc[16,4]<-chi_squared_excess_returns_bull_quartile_three_mc[3]
+# Quartile Four
+temp_coeff<-coef(excess_returns_bull_quartile_four_mc)
+temp_t_stat<-summary(excess_returns_bull_quartile_four_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bull_quartile_four_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_mc[index,5]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_mc[index,5]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_mc[index,5]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bull_quartile_four_mc)$fstatistic[1],
+                 summary(excess_returns_bull_quartile_four_mc)$fstatistic[2],
+                 summary(excess_returns_bull_quartile_four_mc)$fstatistic[3]))
+excess_return_regression_p_stat_table_bull_by_mc[13,5]<-summary(excess_returns_bull_quartile_four_mc)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_mc[14,5]<-p_value
+excess_return_regression_p_stat_table_bull_by_mc[15,5]<-chi_squared_excess_returns_bull_quartile_four_mc[1]
+excess_return_regression_p_stat_table_bull_by_mc[16,5]<-chi_squared_excess_returns_bull_quartile_four_mc[3]
+
+write.csv(excess_return_regression_coeff_table_bull_by_mc,"excess_return_regression_coeff_table_bull_by_mc.csv")
+write.csv(excess_return_regression_t_stat_table_bull_by_mc,"excess_return_regression_t_stat_table_bull_by_mc.csv")
+write.csv(excess_return_regression_p_stat_table_bull_by_mc,"excess_return_regression_p_stat_table_bull_by_mc.csv")
+```
+Excess Returns bull by feps
+```{r}
+x <- c("Overall","Q1(Low)","Q2","Q3","Q4(High)")
+y <- c('January','February','March','April','May','June','July','August','September','October','November','December')
+z <- c('January','February','March','April','May','June','July','August','September','October','November','December','F_Statistic','F_Statistic-P','Chi-Squared_Test','Chi-Square-P')
+# Creation of the coefficent table 
+excess_return_regression_coeff_table_bull_by_feps<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(excess_return_regression_coeff_table_bull_by_feps) <- x
+rownames(excess_return_regression_coeff_table_bull_by_feps)<-y
+# Creation of the t_stat_table 
+excess_return_regression_t_stat_table_bull_by_feps<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(excess_return_regression_t_stat_table_bull_by_feps) <- x
+rownames(excess_return_regression_t_stat_table_bull_by_feps)<-y
+# Creation of the p_stat_table 
+excess_return_regression_p_stat_table_bull_by_feps<- data.frame(matrix(ncol = 5, nrow = 16))
+colnames(excess_return_regression_p_stat_table_bull_by_feps) <- x
+rownames(excess_return_regression_p_stat_table_bull_by_feps)<-z
+# Overall
+temp_coeff<-coef(excess_returns_full_database_bull_regression_model)
+temp_t_stat<-summary(excess_returns_full_database_bull_regression_model)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_full_database_bull_regression_model)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_feps[index,1]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_feps[index,1]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_feps[index,1]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_full_database_bull_regression_model)$fstatistic[1],
+                 summary(excess_returns_full_database_bull_regression_model)$fstatistic[2],
+                 summary(excess_returns_full_database_bull_regression_model)$fstatistic[3]))
+# Add the overall Stats
+excess_return_regression_p_stat_table_bull_by_feps[13,1]<-summary(excess_returns_full_database_bull_regression_model)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_feps[14,1]<- p_value
+excess_return_regression_p_stat_table_bull_by_feps[15,1]<-chi_squared_excess_returns_bull[1]
+excess_return_regression_p_stat_table_bull_by_feps[16,1]<-chi_squared_excess_returns_bull[3]
+# Quartile One
+temp_coeff<-coef(excess_returns_bull_quartile_one_feps)
+temp_t_stat<-summary(excess_returns_bull_quartile_one_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bull_quartile_one_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_feps[index,2]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_feps[index,2]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_feps[index,2]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bull_quartile_one_feps)$fstatistic[1],
+                 summary(excess_returns_bull_quartile_one_feps)$fstatistic[2],
+                 summary(excess_returns_bull_quartile_one_feps)$fstatistic[3]))
+excess_return_regression_p_stat_table_bull_by_feps[13,2]<-summary(excess_returns_bull_quartile_one_feps)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_feps[14,2]<- p_value
+excess_return_regression_p_stat_table_bull_by_feps[15,2]<-chi_squared_excess_returns_bull_quartile_one_feps[1]
+excess_return_regression_p_stat_table_bull_by_feps[16,2]<-chi_squared_excess_returns_bull_quartile_one_feps[3]
+# Quartile two
+temp_coeff<-coef(excess_returns_bull_quartile_two_feps)
+temp_t_stat<-summary(excess_returns_bull_quartile_two_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bull_quartile_two_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_feps[index,3]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_feps[index,3]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_feps[index,3]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bull_quartile_two_feps)$fstatistic[1],
+                 summary(excess_returns_bull_quartile_two_feps)$fstatistic[2],
+                 summary(excess_returns_bull_quartile_two_feps)$fstatistic[3]))
+excess_return_regression_p_stat_table_bull_by_feps[13,3]<-summary(excess_returns_bull_quartile_two_feps)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_feps[14,3]<- p_value
+excess_return_regression_p_stat_table_bull_by_feps[15,3]<-chi_squared_excess_returns_bull_quartile_two_feps[1]
+excess_return_regression_p_stat_table_bull_by_feps[16,3]<-chi_squared_excess_returns_bull_quartile_two_feps[3]
+# Quartile Three
+temp_coeff<-coef(excess_returns_bull_quartile_three_feps)
+temp_t_stat<-summary(excess_returns_bull_quartile_three_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bull_quartile_three_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_feps[index,4]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_feps[index,4]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_feps[index,4]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bull_quartile_three_feps)$fstatistic[1],
+                 summary(excess_returns_bull_quartile_three_feps)$fstatistic[2],
+                 summary(excess_returns_bull_quartile_three_feps)$fstatistic[3]))
+excess_return_regression_p_stat_table_bull_by_feps[13,4]<-summary(excess_returns_bull_quartile_three_feps)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_feps[14,4]<- p_value
+excess_return_regression_p_stat_table_bull_by_feps[15,4]<-chi_squared_excess_returns_bull_quartile_three_feps[1]
+excess_return_regression_p_stat_table_bull_by_feps[16,4]<-chi_squared_excess_returns_bull_quartile_three_feps[3]
+# Quartile Four
+temp_coeff<-coef(excess_returns_bull_quartile_four_feps)
+temp_t_stat<-summary(excess_returns_bull_quartile_four_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(excess_returns_bull_quartile_four_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  excess_return_regression_coeff_table_bull_by_feps[index,5]<-temp_coeff[index]
+  excess_return_regression_t_stat_table_bull_by_feps[index,5]<-temp_t_stat[index]
+  excess_return_regression_p_stat_table_bull_by_feps[index,5]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(excess_returns_bull_quartile_four_feps)$fstatistic[1],
+                 summary(excess_returns_bull_quartile_four_feps)$fstatistic[2],
+                 summary(excess_returns_bull_quartile_four_feps)$fstatistic[3]))
+excess_return_regression_p_stat_table_bull_by_feps[13,5]<-summary(excess_returns_bull_quartile_four_feps)$fstatistic[1]
+excess_return_regression_p_stat_table_bull_by_feps[14,5]<-p_value
+excess_return_regression_p_stat_table_bull_by_feps[15,5]<-chi_squared_excess_returns_bull_quartile_four_feps[1]
+excess_return_regression_p_stat_table_bull_by_feps[16,5]<-chi_squared_excess_returns_bull_quartile_four_feps[3]
+
+write.csv(excess_return_regression_coeff_table_bull_by_feps,"excess_return_regression_coeff_table_bull_by_feps.csv")
+write.csv(excess_return_regression_t_stat_table_bull_by_feps,"excess_return_regression_t_stat_table_bull_by_feps.csv")
+write.csv(excess_return_regression_p_stat_table_bull_by_feps,"excess_return_regression_p_stat_table_bull_by_feps.csv")
+```
+
+raw Returns Bear by Analyst Following
+```{r}
+x <- c("Overall","Q1(Low)","Q2","Q3","Q4(High)")
+y <- c('January','February','March','April','May','June','July','August','September','October','November','December')
+z <- c('January','February','March','April','May','June','July','August','September','October','November','December','F_Statistic','F_Statistic-P','Chi-Squared_Test','Chi-Square-P')
+# Creation of the coefficent table 
+raw_return_regression_coeff_table_bear_by_analyst_following<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(raw_return_regression_coeff_table_bear_by_analyst_following) <- x
+rownames(raw_return_regression_coeff_table_bear_by_analyst_following)<-y
+# Creation of the t_stat_table 
+raw_return_regression_t_stat_table_bear_by_analyst_following<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(raw_return_regression_t_stat_table_bear_by_analyst_following) <- x
+rownames(raw_return_regression_t_stat_table_bear_by_analyst_following)<-y
+# Creation of the p_stat_table 
+raw_return_regression_p_stat_table_bear_by_analyst_following<- data.frame(matrix(ncol = 5, nrow = 16))
+colnames(raw_return_regression_p_stat_table_bear_by_analyst_following) <- x
+rownames(raw_return_regression_p_stat_table_bear_by_analyst_following)<-z
+# Overall
+temp_coeff<-coef(raw_returns_full_database_bear_regression_model)
+temp_t_stat<-summary(raw_returns_full_database_bear_regression_model)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_full_database_bear_regression_model)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_analyst_following[index,1]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_analyst_following[index,1]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_analyst_following[index,1]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_full_database_bear_regression_model)$fstatistic[1],
+                 summary(raw_returns_full_database_bear_regression_model)$fstatistic[2],
+                 summary(raw_returns_full_database_bear_regression_model)$fstatistic[3]))
+# Add the overall Stats
+raw_return_regression_p_stat_table_bear_by_analyst_following[13,1]<-summary(raw_returns_full_database_bear_regression_model)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_analyst_following[14,1]<- p_value
+raw_return_regression_p_stat_table_bear_by_analyst_following[15,1]<-chi_squared_raw_returns_bear[1]
+raw_return_regression_p_stat_table_bear_by_analyst_following[16,1]<-chi_squared_raw_returns_bear[3]
+# Quartile One
+temp_coeff<-coef(raw_returns_bear_quartile_one_analyst_following)
+temp_t_stat<-summary(raw_returns_bear_quartile_one_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bear_quartile_one_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_analyst_following[index,2]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_analyst_following[index,2]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_analyst_following[index,2]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bear_quartile_one_analyst_following)$fstatistic[1],
+                 summary(raw_returns_bear_quartile_one_analyst_following)$fstatistic[2],
+                 summary(raw_returns_bear_quartile_one_analyst_following)$fstatistic[3]))
+raw_return_regression_p_stat_table_bear_by_analyst_following[13,2]<-summary(raw_returns_bear_quartile_one_analyst_following)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_analyst_following[14,2]<- p_value
+raw_return_regression_p_stat_table_bear_by_analyst_following[15,2]<-chi_squared_raw_returns_bear_quartile_one_analyst_following[1]
+raw_return_regression_p_stat_table_bear_by_analyst_following[16,2]<-chi_squared_raw_returns_bear_quartile_one_analyst_following[3]
+# Quartile two
+temp_coeff<-coef(raw_returns_bear_quartile_two_analyst_following)
+temp_t_stat<-summary(raw_returns_bear_quartile_two_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bear_quartile_two_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_analyst_following[index,3]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_analyst_following[index,3]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_analyst_following[index,3]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bear_quartile_two_analyst_following)$fstatistic[1],
+                 summary(raw_returns_bear_quartile_two_analyst_following)$fstatistic[2],
+                 summary(raw_returns_bear_quartile_two_analyst_following)$fstatistic[3]))
+raw_return_regression_p_stat_table_bear_by_analyst_following[13,3]<-summary(raw_returns_bear_quartile_two_analyst_following)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_analyst_following[14,3]<- p_value
+raw_return_regression_p_stat_table_bear_by_analyst_following[15,3]<-chi_squared_raw_returns_bear_quartile_two_analyst_following[1]
+raw_return_regression_p_stat_table_bear_by_analyst_following[16,3]<-chi_squared_raw_returns_bear_quartile_two_analyst_following[3]
+# Quartile Three
+temp_coeff<-coef(raw_returns_bear_quartile_three_analyst_following)
+temp_t_stat<-summary(raw_returns_bear_quartile_three_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bear_quartile_three_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_analyst_following[index,4]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_analyst_following[index,4]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_analyst_following[index,4]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bear_quartile_three_analyst_following)$fstatistic[1],
+                 summary(raw_returns_bear_quartile_three_analyst_following)$fstatistic[2],
+                 summary(raw_returns_bear_quartile_three_analyst_following)$fstatistic[3]))
+raw_return_regression_p_stat_table_bear_by_analyst_following[13,4]<-summary(raw_returns_bear_quartile_three_analyst_following)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_analyst_following[14,4]<- p_value
+raw_return_regression_p_stat_table_bear_by_analyst_following[15,4]<-chi_squared_raw_returns_bear_quartile_three_analyst_following[1]
+raw_return_regression_p_stat_table_bear_by_analyst_following[16,4]<-chi_squared_raw_returns_bear_quartile_three_analyst_following[3]
+# Quartile Four
+temp_coeff<-coef(raw_returns_bear_quartile_four_analyst_following)
+temp_t_stat<-summary(raw_returns_bear_quartile_four_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bear_quartile_four_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_analyst_following[index,5]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_analyst_following[index,5]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_analyst_following[index,5]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bear_quartile_four_analyst_following)$fstatistic[1],
+                 summary(raw_returns_bear_quartile_four_analyst_following)$fstatistic[2],
+                 summary(raw_returns_bear_quartile_four_analyst_following)$fstatistic[3]))
+raw_return_regression_p_stat_table_bear_by_analyst_following[13,5]<-summary(raw_returns_bear_quartile_four_analyst_following)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_analyst_following[14,5]<-p_value
+raw_return_regression_p_stat_table_bear_by_analyst_following[15,5]<-chi_squared_raw_returns_bear_quartile_four_analyst_following[1]
+raw_return_regression_p_stat_table_bear_by_analyst_following[16,5]<-chi_squared_raw_returns_bear_quartile_four_analyst_following[3]
+
+write.csv(raw_return_regression_coeff_table_bear_by_analyst_following,"raw_return_regression_coeff_table_bear_by_analyst_following.csv")
+write.csv(raw_return_regression_t_stat_table_bear_by_analyst_following,"raw_return_regression_t_stat_table_bear_by_analyst_following.csv")
+write.csv(raw_return_regression_p_stat_table_bear_by_analyst_following,"raw_return_regression_p_stat_table_bear_by_analyst_following.csv")
+```
+raw Returns Bear by market cap
+```{r}
+x <- c("Overall","Q1(Low)","Q2","Q3","Q4(High)")
+y <- c('January','February','March','April','May','June','July','August','September','October','November','December')
+z <- c('January','February','March','April','May','June','July','August','September','October','November','December','F_Statistic','F_Statistic-P','Chi-Squared_Test','Chi-Square-P')
+# Creation of the coefficent table 
+raw_return_regression_coeff_table_bear_by_mc<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(raw_return_regression_coeff_table_bear_by_mc) <- x
+rownames(raw_return_regression_coeff_table_bear_by_mc)<-y
+# Creation of the t_stat_table 
+raw_return_regression_t_stat_table_bear_by_mc<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(raw_return_regression_t_stat_table_bear_by_mc) <- x
+rownames(raw_return_regression_t_stat_table_bear_by_mc)<-y
+# Creation of the p_stat_table 
+raw_return_regression_p_stat_table_bear_by_mc<- data.frame(matrix(ncol = 5, nrow = 16))
+colnames(raw_return_regression_p_stat_table_bear_by_mc) <- x
+rownames(raw_return_regression_p_stat_table_bear_by_mc)<-z
+# Overall
+temp_coeff<-coef(raw_returns_full_database_bear_regression_model)
+temp_t_stat<-summary(raw_returns_full_database_bear_regression_model)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_full_database_bear_regression_model)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_mc[index,1]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_mc[index,1]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_mc[index,1]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_full_database_bear_regression_model)$fstatistic[1],
+                 summary(raw_returns_full_database_bear_regression_model)$fstatistic[2],
+                 summary(raw_returns_full_database_bear_regression_model)$fstatistic[3]))
+# Add the overall Stats
+raw_return_regression_p_stat_table_bear_by_mc[13,1]<-summary(raw_returns_full_database_bear_regression_model)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_mc[14,1]<- p_value
+raw_return_regression_p_stat_table_bear_by_mc[15,1]<-chi_squared_raw_returns_bear[1]
+raw_return_regression_p_stat_table_bear_by_mc[16,1]<-chi_squared_raw_returns_bear[3]
+# Quartile One
+temp_coeff<-coef(raw_returns_bear_quartile_one_mc)
+temp_t_stat<-summary(raw_returns_bear_quartile_one_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bear_quartile_one_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_mc[index,2]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_mc[index,2]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_mc[index,2]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bear_quartile_one_mc)$fstatistic[1],
+                 summary(raw_returns_bear_quartile_one_mc)$fstatistic[2],
+                 summary(raw_returns_bear_quartile_one_mc)$fstatistic[3]))
+raw_return_regression_p_stat_table_bear_by_mc[13,2]<-summary(raw_returns_bear_quartile_one_mc)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_mc[14,2]<- p_value
+raw_return_regression_p_stat_table_bear_by_mc[15,2]<-chi_squared_raw_returns_bear_quartile_one_mc[1]
+raw_return_regression_p_stat_table_bear_by_mc[16,2]<-chi_squared_raw_returns_bear_quartile_one_mc[3]
+# Quartile two
+temp_coeff<-coef(raw_returns_bear_quartile_two_mc)
+temp_t_stat<-summary(raw_returns_bear_quartile_two_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bear_quartile_two_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_mc[index,3]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_mc[index,3]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_mc[index,3]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bear_quartile_two_mc)$fstatistic[1],
+                 summary(raw_returns_bear_quartile_two_mc)$fstatistic[2],
+                 summary(raw_returns_bear_quartile_two_mc)$fstatistic[3]))
+raw_return_regression_p_stat_table_bear_by_mc[13,3]<-summary(raw_returns_bear_quartile_two_mc)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_mc[14,3]<- p_value
+raw_return_regression_p_stat_table_bear_by_mc[15,3]<-chi_squared_raw_returns_bear_quartile_two_mc[1]
+raw_return_regression_p_stat_table_bear_by_mc[16,3]<-chi_squared_raw_returns_bear_quartile_two_mc[3]
+# Quartile Three
+temp_coeff<-coef(raw_returns_bear_quartile_three_mc)
+temp_t_stat<-summary(raw_returns_bear_quartile_three_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bear_quartile_three_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_mc[index,4]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_mc[index,4]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_mc[index,4]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bear_quartile_three_mc)$fstatistic[1],
+                 summary(raw_returns_bear_quartile_three_mc)$fstatistic[2],
+                 summary(raw_returns_bear_quartile_three_mc)$fstatistic[3]))
+raw_return_regression_p_stat_table_bear_by_mc[13,4]<-summary(raw_returns_bear_quartile_three_mc)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_mc[14,4]<- p_value
+raw_return_regression_p_stat_table_bear_by_mc[15,4]<-chi_squared_raw_returns_bear_quartile_three_mc[1]
+raw_return_regression_p_stat_table_bear_by_mc[16,4]<-chi_squared_raw_returns_bear_quartile_three_mc[3]
+# Quartile Four
+temp_coeff<-coef(raw_returns_bear_quartile_four_mc)
+temp_t_stat<-summary(raw_returns_bear_quartile_four_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bear_quartile_four_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_mc[index,5]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_mc[index,5]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_mc[index,5]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bear_quartile_four_mc)$fstatistic[1],
+                 summary(raw_returns_bear_quartile_four_mc)$fstatistic[2],
+                 summary(raw_returns_bear_quartile_four_mc)$fstatistic[3]))
+raw_return_regression_p_stat_table_bear_by_mc[13,5]<-summary(raw_returns_bear_quartile_four_mc)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_mc[14,5]<-p_value
+raw_return_regression_p_stat_table_bear_by_mc[15,5]<-chi_squared_raw_returns_bear_quartile_four_mc[1]
+raw_return_regression_p_stat_table_bear_by_mc[16,5]<-chi_squared_raw_returns_bear_quartile_four_mc[3]
+
+write.csv(raw_return_regression_coeff_table_bear_by_mc,"raw_return_regression_coeff_table_bear_by_mc.csv")
+write.csv(raw_return_regression_t_stat_table_bear_by_mc,"raw_return_regression_t_stat_table_bear_by_mc.csv")
+write.csv(raw_return_regression_p_stat_table_bear_by_mc,"raw_return_regression_p_stat_table_bear_by_mc.csv")
+```
+raw Returns Bear by feps
+```{r}
+x <- c("Overall","Q1(Low)","Q2","Q3","Q4(High)")
+y <- c('January','February','March','April','May','June','July','August','September','October','November','December')
+z <- c('January','February','March','April','May','June','July','August','September','October','November','December','F_Statistic','F_Statistic-P','Chi-Squared_Test','Chi-Square-P')
+# Creation of the coefficent table 
+raw_return_regression_coeff_table_bear_by_feps<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(raw_return_regression_coeff_table_bear_by_feps) <- x
+rownames(raw_return_regression_coeff_table_bear_by_feps)<-y
+# Creation of the t_stat_table 
+raw_return_regression_t_stat_table_bear_by_feps<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(raw_return_regression_t_stat_table_bear_by_feps) <- x
+rownames(raw_return_regression_t_stat_table_bear_by_feps)<-y
+# Creation of the p_stat_table 
+raw_return_regression_p_stat_table_bear_by_feps<- data.frame(matrix(ncol = 5, nrow = 16))
+colnames(raw_return_regression_p_stat_table_bear_by_feps) <- x
+rownames(raw_return_regression_p_stat_table_bear_by_feps)<-z
+# Overall
+temp_coeff<-coef(raw_returns_full_database_bear_regression_model)
+temp_t_stat<-summary(raw_returns_full_database_bear_regression_model)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_full_database_bear_regression_model)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_feps[index,1]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_feps[index,1]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_feps[index,1]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_full_database_bear_regression_model)$fstatistic[1],
+                 summary(raw_returns_full_database_bear_regression_model)$fstatistic[2],
+                 summary(raw_returns_full_database_bear_regression_model)$fstatistic[3]))
+# Add the overall Stats
+raw_return_regression_p_stat_table_bear_by_feps[13,1]<-summary(raw_returns_full_database_bear_regression_model)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_feps[14,1]<- p_value
+raw_return_regression_p_stat_table_bear_by_feps[15,1]<-chi_squared_raw_returns_bear[1]
+raw_return_regression_p_stat_table_bear_by_feps[16,1]<-chi_squared_raw_returns_bear[3]
+# Quartile One
+temp_coeff<-coef(raw_returns_bear_quartile_one_feps)
+temp_t_stat<-summary(raw_returns_bear_quartile_one_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bear_quartile_one_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_feps[index,2]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_feps[index,2]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_feps[index,2]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bear_quartile_one_feps)$fstatistic[1],
+                 summary(raw_returns_bear_quartile_one_feps)$fstatistic[2],
+                 summary(raw_returns_bear_quartile_one_feps)$fstatistic[3]))
+raw_return_regression_p_stat_table_bear_by_feps[13,2]<-summary(raw_returns_bear_quartile_one_feps)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_feps[14,2]<- p_value
+raw_return_regression_p_stat_table_bear_by_feps[15,2]<-chi_squared_raw_returns_bear_quartile_one_feps[1]
+raw_return_regression_p_stat_table_bear_by_feps[16,2]<-chi_squared_raw_returns_bear_quartile_one_feps[3]
+# Quartile two
+temp_coeff<-coef(raw_returns_bear_quartile_two_feps)
+temp_t_stat<-summary(raw_returns_bear_quartile_two_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bear_quartile_two_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_feps[index,3]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_feps[index,3]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_feps[index,3]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bear_quartile_two_feps)$fstatistic[1],
+                 summary(raw_returns_bear_quartile_two_feps)$fstatistic[2],
+                 summary(raw_returns_bear_quartile_two_feps)$fstatistic[3]))
+raw_return_regression_p_stat_table_bear_by_feps[13,3]<-summary(raw_returns_bear_quartile_two_feps)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_feps[14,3]<- p_value
+raw_return_regression_p_stat_table_bear_by_feps[15,3]<-chi_squared_raw_returns_bear_quartile_two_feps[1]
+raw_return_regression_p_stat_table_bear_by_feps[16,3]<-chi_squared_raw_returns_bear_quartile_two_feps[3]
+# Quartile Three
+temp_coeff<-coef(raw_returns_bear_quartile_three_feps)
+temp_t_stat<-summary(raw_returns_bear_quartile_three_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bear_quartile_three_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_feps[index,4]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_feps[index,4]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_feps[index,4]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bear_quartile_three_feps)$fstatistic[1],
+                 summary(raw_returns_bear_quartile_three_feps)$fstatistic[2],
+                 summary(raw_returns_bear_quartile_three_feps)$fstatistic[3]))
+raw_return_regression_p_stat_table_bear_by_feps[13,4]<-summary(raw_returns_bear_quartile_three_feps)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_feps[14,4]<- p_value
+raw_return_regression_p_stat_table_bear_by_feps[15,4]<-chi_squared_raw_returns_bear_quartile_three_feps[1]
+raw_return_regression_p_stat_table_bear_by_feps[16,4]<-chi_squared_raw_returns_bear_quartile_three_feps[3]
+# Quartile Four
+temp_coeff<-coef(raw_returns_bear_quartile_four_feps)
+temp_t_stat<-summary(raw_returns_bear_quartile_four_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bear_quartile_four_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bear_by_feps[index,5]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bear_by_feps[index,5]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bear_by_feps[index,5]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bear_quartile_four_feps)$fstatistic[1],
+                 summary(raw_returns_bear_quartile_four_feps)$fstatistic[2],
+                 summary(raw_returns_bear_quartile_four_feps)$fstatistic[3]))
+raw_return_regression_p_stat_table_bear_by_feps[13,5]<-summary(raw_returns_bear_quartile_four_feps)$fstatistic[1]
+raw_return_regression_p_stat_table_bear_by_feps[14,5]<-p_value
+raw_return_regression_p_stat_table_bear_by_feps[15,5]<-chi_squared_raw_returns_bear_quartile_four_feps[1]
+raw_return_regression_p_stat_table_bear_by_feps[16,5]<-chi_squared_raw_returns_bear_quartile_four_feps[3]
+
+write.csv(raw_return_regression_coeff_table_bear_by_feps,"raw_return_regression_coeff_table_bear_by_feps.csv")
+write.csv(raw_return_regression_t_stat_table_bear_by_feps,"raw_return_regression_t_stat_table_bear_by_feps.csv")
+write.csv(raw_return_regression_p_stat_table_bear_by_feps,"raw_return_regression_p_stat_table_bear_by_feps.csv")
+```
+raw Returns bull by Analyst Following
+```{r}
+x <- c("Overall","Q1(Low)","Q2","Q3","Q4(High)")
+y <- c('January','February','March','April','May','June','July','August','September','October','November','December')
+z <- c('January','February','March','April','May','June','July','August','September','October','November','December','F_Statistic','F_Statistic-P','Chi-Squared_Test','Chi-Square-P')
+# Creation of the coefficent table 
+raw_return_regression_coeff_table_bull_by_analyst_following<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(raw_return_regression_coeff_table_bull_by_analyst_following) <- x
+rownames(raw_return_regression_coeff_table_bull_by_analyst_following)<-y
+# Creation of the t_stat_table 
+raw_return_regression_t_stat_table_bull_by_analyst_following<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(raw_return_regression_t_stat_table_bull_by_analyst_following) <- x
+rownames(raw_return_regression_t_stat_table_bull_by_analyst_following)<-y
+# Creation of the p_stat_table 
+raw_return_regression_p_stat_table_bull_by_analyst_following<- data.frame(matrix(ncol = 5, nrow = 16))
+colnames(raw_return_regression_p_stat_table_bull_by_analyst_following) <- x
+rownames(raw_return_regression_p_stat_table_bull_by_analyst_following)<-z
+# Overall
+temp_coeff<-coef(raw_returns_full_database_bull_regression_model)
+temp_t_stat<-summary(raw_returns_full_database_bull_regression_model)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_full_database_bull_regression_model)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_analyst_following[index,1]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_analyst_following[index,1]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_analyst_following[index,1]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_full_database_bull_regression_model)$fstatistic[1],
+                 summary(raw_returns_full_database_bull_regression_model)$fstatistic[2],
+                 summary(raw_returns_full_database_bull_regression_model)$fstatistic[3]))
+# Add the overall Stats
+raw_return_regression_p_stat_table_bull_by_analyst_following[13,1]<-summary(raw_returns_full_database_bull_regression_model)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_analyst_following[14,1]<- p_value
+raw_return_regression_p_stat_table_bull_by_analyst_following[15,1]<-chi_squared_raw_returns_bull[1]
+raw_return_regression_p_stat_table_bull_by_analyst_following[16,1]<-chi_squared_raw_returns_bull[3]
+# Quartile One
+temp_coeff<-coef(raw_returns_bull_quartile_one_analyst_following)
+temp_t_stat<-summary(raw_returns_bull_quartile_one_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bull_quartile_one_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_analyst_following[index,2]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_analyst_following[index,2]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_analyst_following[index,2]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bull_quartile_one_analyst_following)$fstatistic[1],
+                 summary(raw_returns_bull_quartile_one_analyst_following)$fstatistic[2],
+                 summary(raw_returns_bull_quartile_one_analyst_following)$fstatistic[3]))
+raw_return_regression_p_stat_table_bull_by_analyst_following[13,2]<-summary(raw_returns_bull_quartile_one_analyst_following)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_analyst_following[14,2]<- p_value
+raw_return_regression_p_stat_table_bull_by_analyst_following[15,2]<-chi_squared_raw_returns_bull_quartile_one_analyst_following[1]
+raw_return_regression_p_stat_table_bull_by_analyst_following[16,2]<-chi_squared_raw_returns_bull_quartile_one_analyst_following[3]
+# Quartile two
+temp_coeff<-coef(raw_returns_bull_quartile_two_analyst_following)
+temp_t_stat<-summary(raw_returns_bull_quartile_two_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bull_quartile_two_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_analyst_following[index,3]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_analyst_following[index,3]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_analyst_following[index,3]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bull_quartile_two_analyst_following)$fstatistic[1],
+                 summary(raw_returns_bull_quartile_two_analyst_following)$fstatistic[2],
+                 summary(raw_returns_bull_quartile_two_analyst_following)$fstatistic[3]))
+raw_return_regression_p_stat_table_bull_by_analyst_following[13,3]<-summary(raw_returns_bull_quartile_two_analyst_following)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_analyst_following[14,3]<- p_value
+raw_return_regression_p_stat_table_bull_by_analyst_following[15,3]<-chi_squared_raw_returns_bull_quartile_two_analyst_following[1]
+raw_return_regression_p_stat_table_bull_by_analyst_following[16,3]<-chi_squared_raw_returns_bull_quartile_two_analyst_following[3]
+# Quartile Three
+temp_coeff<-coef(raw_returns_bull_quartile_three_analyst_following)
+temp_t_stat<-summary(raw_returns_bull_quartile_three_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bull_quartile_three_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_analyst_following[index,4]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_analyst_following[index,4]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_analyst_following[index,4]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bull_quartile_three_analyst_following)$fstatistic[1],
+                 summary(raw_returns_bull_quartile_three_analyst_following)$fstatistic[2],
+                 summary(raw_returns_bull_quartile_three_analyst_following)$fstatistic[3]))
+raw_return_regression_p_stat_table_bull_by_analyst_following[13,4]<-summary(raw_returns_bull_quartile_three_analyst_following)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_analyst_following[14,4]<- p_value
+raw_return_regression_p_stat_table_bull_by_analyst_following[15,4]<-chi_squared_raw_returns_bull_quartile_three_analyst_following[1]
+raw_return_regression_p_stat_table_bull_by_analyst_following[16,4]<-chi_squared_raw_returns_bull_quartile_three_analyst_following[3]
+# Quartile Four
+temp_coeff<-coef(raw_returns_bull_quartile_four_analyst_following)
+temp_t_stat<-summary(raw_returns_bull_quartile_four_analyst_following)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bull_quartile_four_analyst_following)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_analyst_following[index,5]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_analyst_following[index,5]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_analyst_following[index,5]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bull_quartile_four_analyst_following)$fstatistic[1],
+                 summary(raw_returns_bull_quartile_four_analyst_following)$fstatistic[2],
+                 summary(raw_returns_bull_quartile_four_analyst_following)$fstatistic[3]))
+raw_return_regression_p_stat_table_bull_by_analyst_following[13,5]<-summary(raw_returns_bull_quartile_four_analyst_following)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_analyst_following[14,5]<-p_value
+raw_return_regression_p_stat_table_bull_by_analyst_following[15,5]<-chi_squared_raw_returns_bull_quartile_four_analyst_following[1]
+raw_return_regression_p_stat_table_bull_by_analyst_following[16,5]<-chi_squared_raw_returns_bull_quartile_four_analyst_following[3]
+
+write.csv(raw_return_regression_coeff_table_bull_by_analyst_following,"raw_return_regression_coeff_table_bull_by_analyst_following.csv")
+write.csv(raw_return_regression_t_stat_table_bull_by_analyst_following,"raw_return_regression_t_stat_table_bull_by_analyst_following.csv")
+write.csv(raw_return_regression_p_stat_table_bull_by_analyst_following,"raw_return_regression_p_stat_table_bull_by_analyst_following.csv")
+```
+raw Returns bull by market cap
+```{r}
+x <- c("Overall","Q1(Low)","Q2","Q3","Q4(High)")
+y <- c('January','February','March','April','May','June','July','August','September','October','November','December')
+z <- c('January','February','March','April','May','June','July','August','September','October','November','December','F_Statistic','F_Statistic-P','Chi-Squared_Test','Chi-Square-P')
+# Creation of the coefficent table 
+raw_return_regression_coeff_table_bull_by_mc<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(raw_return_regression_coeff_table_bull_by_mc) <- x
+rownames(raw_return_regression_coeff_table_bull_by_mc)<-y
+# Creation of the t_stat_table 
+raw_return_regression_t_stat_table_bull_by_mc<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(raw_return_regression_t_stat_table_bull_by_mc) <- x
+rownames(raw_return_regression_t_stat_table_bull_by_mc)<-y
+# Creation of the p_stat_table 
+raw_return_regression_p_stat_table_bull_by_mc<- data.frame(matrix(ncol = 5, nrow = 16))
+colnames(raw_return_regression_p_stat_table_bull_by_mc) <- x
+rownames(raw_return_regression_p_stat_table_bull_by_mc)<-z
+# Overall
+temp_coeff<-coef(raw_returns_full_database_bull_regression_model)
+temp_t_stat<-summary(raw_returns_full_database_bull_regression_model)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_full_database_bull_regression_model)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_mc[index,1]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_mc[index,1]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_mc[index,1]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_full_database_bull_regression_model)$fstatistic[1],
+                 summary(raw_returns_full_database_bull_regression_model)$fstatistic[2],
+                 summary(raw_returns_full_database_bull_regression_model)$fstatistic[3]))
+# Add the overall Stats
+raw_return_regression_p_stat_table_bull_by_mc[13,1]<-summary(raw_returns_full_database_bull_regression_model)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_mc[14,1]<- p_value
+raw_return_regression_p_stat_table_bull_by_mc[15,1]<-chi_squared_raw_returns_bull[1]
+raw_return_regression_p_stat_table_bull_by_mc[16,1]<-chi_squared_raw_returns_bull[3]
+# Quartile One
+temp_coeff<-coef(raw_returns_bull_quartile_one_mc)
+temp_t_stat<-summary(raw_returns_bull_quartile_one_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bull_quartile_one_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_mc[index,2]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_mc[index,2]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_mc[index,2]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bull_quartile_one_mc)$fstatistic[1],
+                 summary(raw_returns_bull_quartile_one_mc)$fstatistic[2],
+                 summary(raw_returns_bull_quartile_one_mc)$fstatistic[3]))
+raw_return_regression_p_stat_table_bull_by_mc[13,2]<-summary(raw_returns_bull_quartile_one_mc)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_mc[14,2]<- p_value
+raw_return_regression_p_stat_table_bull_by_mc[15,2]<-chi_squared_raw_returns_bull_quartile_one_mc[1]
+raw_return_regression_p_stat_table_bull_by_mc[16,2]<-chi_squared_raw_returns_bull_quartile_one_mc[3]
+# Quartile two
+temp_coeff<-coef(raw_returns_bull_quartile_two_mc)
+temp_t_stat<-summary(raw_returns_bull_quartile_two_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bull_quartile_two_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_mc[index,3]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_mc[index,3]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_mc[index,3]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bull_quartile_two_mc)$fstatistic[1],
+                 summary(raw_returns_bull_quartile_two_mc)$fstatistic[2],
+                 summary(raw_returns_bull_quartile_two_mc)$fstatistic[3]))
+raw_return_regression_p_stat_table_bull_by_mc[13,3]<-summary(raw_returns_bull_quartile_two_mc)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_mc[14,3]<- p_value
+raw_return_regression_p_stat_table_bull_by_mc[15,3]<-chi_squared_raw_returns_bull_quartile_two_mc[1]
+raw_return_regression_p_stat_table_bull_by_mc[16,3]<-chi_squared_raw_returns_bull_quartile_two_mc[3]
+# Quartile Three
+temp_coeff<-coef(raw_returns_bull_quartile_three_mc)
+temp_t_stat<-summary(raw_returns_bull_quartile_three_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bull_quartile_three_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_mc[index,4]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_mc[index,4]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_mc[index,4]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bull_quartile_three_mc)$fstatistic[1],
+                 summary(raw_returns_bull_quartile_three_mc)$fstatistic[2],
+                 summary(raw_returns_bull_quartile_three_mc)$fstatistic[3]))
+raw_return_regression_p_stat_table_bull_by_mc[13,4]<-summary(raw_returns_bull_quartile_three_mc)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_mc[14,4]<- p_value
+raw_return_regression_p_stat_table_bull_by_mc[15,4]<-chi_squared_raw_returns_bull_quartile_three_mc[1]
+raw_return_regression_p_stat_table_bull_by_mc[16,4]<-chi_squared_raw_returns_bull_quartile_three_mc[3]
+# Quartile Four
+temp_coeff<-coef(raw_returns_bull_quartile_four_mc)
+temp_t_stat<-summary(raw_returns_bull_quartile_four_mc)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bull_quartile_four_mc)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_mc[index,5]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_mc[index,5]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_mc[index,5]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bull_quartile_four_mc)$fstatistic[1],
+                 summary(raw_returns_bull_quartile_four_mc)$fstatistic[2],
+                 summary(raw_returns_bull_quartile_four_mc)$fstatistic[3]))
+raw_return_regression_p_stat_table_bull_by_mc[13,5]<-summary(raw_returns_bull_quartile_four_mc)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_mc[14,5]<-p_value
+raw_return_regression_p_stat_table_bull_by_mc[15,5]<-chi_squared_raw_returns_bull_quartile_four_mc[1]
+raw_return_regression_p_stat_table_bull_by_mc[16,5]<-chi_squared_raw_returns_bull_quartile_four_mc[3]
+
+write.csv(raw_return_regression_coeff_table_bull_by_mc,"raw_return_regression_coeff_table_bull_by_mc.csv")
+write.csv(raw_return_regression_t_stat_table_bull_by_mc,"raw_return_regression_t_stat_table_bull_by_mc.csv")
+write.csv(raw_return_regression_p_stat_table_bull_by_mc,"raw_return_regression_p_stat_table_bull_by_mc.csv")
+```
+raw Returns bull by feps
+```{r}
+x <- c("Overall","Q1(Low)","Q2","Q3","Q4(High)")
+y <- c('January','February','March','April','May','June','July','August','September','October','November','December')
+z <- c('January','February','March','April','May','June','July','August','September','October','November','December','F_Statistic','F_Statistic-P','Chi-Squared_Test','Chi-Square-P')
+# Creation of the coefficent table 
+raw_return_regression_coeff_table_bull_by_feps<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(raw_return_regression_coeff_table_bull_by_feps) <- x
+rownames(raw_return_regression_coeff_table_bull_by_feps)<-y
+# Creation of the t_stat_table 
+raw_return_regression_t_stat_table_bull_by_feps<- data.frame(matrix(ncol = 5, nrow = 12))
+colnames(raw_return_regression_t_stat_table_bull_by_feps) <- x
+rownames(raw_return_regression_t_stat_table_bull_by_feps)<-y
+# Creation of the p_stat_table 
+raw_return_regression_p_stat_table_bull_by_feps<- data.frame(matrix(ncol = 5, nrow = 16))
+colnames(raw_return_regression_p_stat_table_bull_by_feps) <- x
+rownames(raw_return_regression_p_stat_table_bull_by_feps)<-z
+# Overall
+temp_coeff<-coef(raw_returns_full_database_bull_regression_model)
+temp_t_stat<-summary(raw_returns_full_database_bull_regression_model)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_full_database_bull_regression_model)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_feps[index,1]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_feps[index,1]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_feps[index,1]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_full_database_bull_regression_model)$fstatistic[1],
+                 summary(raw_returns_full_database_bull_regression_model)$fstatistic[2],
+                 summary(raw_returns_full_database_bull_regression_model)$fstatistic[3]))
+# Add the overall Stats
+raw_return_regression_p_stat_table_bull_by_feps[13,1]<-summary(raw_returns_full_database_bull_regression_model)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_feps[14,1]<- p_value
+raw_return_regression_p_stat_table_bull_by_feps[15,1]<-chi_squared_raw_returns_bull[1]
+raw_return_regression_p_stat_table_bull_by_feps[16,1]<-chi_squared_raw_returns_bull[3]
+# Quartile One
+temp_coeff<-coef(raw_returns_bull_quartile_one_feps)
+temp_t_stat<-summary(raw_returns_bull_quartile_one_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bull_quartile_one_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_feps[index,2]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_feps[index,2]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_feps[index,2]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bull_quartile_one_feps)$fstatistic[1],
+                 summary(raw_returns_bull_quartile_one_feps)$fstatistic[2],
+                 summary(raw_returns_bull_quartile_one_feps)$fstatistic[3]))
+raw_return_regression_p_stat_table_bull_by_feps[13,2]<-summary(raw_returns_bull_quartile_one_feps)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_feps[14,2]<- p_value
+raw_return_regression_p_stat_table_bull_by_feps[15,2]<-chi_squared_raw_returns_bull_quartile_one_feps[1]
+raw_return_regression_p_stat_table_bull_by_feps[16,2]<-chi_squared_raw_returns_bull_quartile_one_feps[3]
+# Quartile two
+temp_coeff<-coef(raw_returns_bull_quartile_two_feps)
+temp_t_stat<-summary(raw_returns_bull_quartile_two_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bull_quartile_two_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_feps[index,3]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_feps[index,3]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_feps[index,3]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bull_quartile_two_feps)$fstatistic[1],
+                 summary(raw_returns_bull_quartile_two_feps)$fstatistic[2],
+                 summary(raw_returns_bull_quartile_two_feps)$fstatistic[3]))
+raw_return_regression_p_stat_table_bull_by_feps[13,3]<-summary(raw_returns_bull_quartile_two_feps)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_feps[14,3]<- p_value
+raw_return_regression_p_stat_table_bull_by_feps[15,3]<-chi_squared_raw_returns_bull_quartile_two_feps[1]
+raw_return_regression_p_stat_table_bull_by_feps[16,3]<-chi_squared_raw_returns_bull_quartile_two_feps[3]
+# Quartile Three
+temp_coeff<-coef(raw_returns_bull_quartile_three_feps)
+temp_t_stat<-summary(raw_returns_bull_quartile_three_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bull_quartile_three_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_feps[index,4]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_feps[index,4]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_feps[index,4]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bull_quartile_three_feps)$fstatistic[1],
+                 summary(raw_returns_bull_quartile_three_feps)$fstatistic[2],
+                 summary(raw_returns_bull_quartile_three_feps)$fstatistic[3]))
+raw_return_regression_p_stat_table_bull_by_feps[13,4]<-summary(raw_returns_bull_quartile_three_feps)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_feps[14,4]<- p_value
+raw_return_regression_p_stat_table_bull_by_feps[15,4]<-chi_squared_raw_returns_bull_quartile_three_feps[1]
+raw_return_regression_p_stat_table_bull_by_feps[16,4]<-chi_squared_raw_returns_bull_quartile_three_feps[3]
+# Quartile Four
+temp_coeff<-coef(raw_returns_bull_quartile_four_feps)
+temp_t_stat<-summary(raw_returns_bull_quartile_four_feps)[["coefficients"]][, "t value"]
+temp_p_stat<-summary(raw_returns_bull_quartile_four_feps)[["coefficients"]][, 4]
+for(index in 1:length(temp_coeff)){
+  raw_return_regression_coeff_table_bull_by_feps[index,5]<-temp_coeff[index]
+  raw_return_regression_t_stat_table_bull_by_feps[index,5]<-temp_t_stat[index]
+  raw_return_regression_p_stat_table_bull_by_feps[index,5]<-temp_p_stat[index]
+}
+p_value <- (1-pf(summary(raw_returns_bull_quartile_four_feps)$fstatistic[1],
+                 summary(raw_returns_bull_quartile_four_feps)$fstatistic[2],
+                 summary(raw_returns_bull_quartile_four_feps)$fstatistic[3]))
+raw_return_regression_p_stat_table_bull_by_feps[13,5]<-summary(raw_returns_bull_quartile_four_feps)$fstatistic[1]
+raw_return_regression_p_stat_table_bull_by_feps[14,5]<-p_value
+raw_return_regression_p_stat_table_bull_by_feps[15,5]<-chi_squared_raw_returns_bull_quartile_four_feps[1]
+raw_return_regression_p_stat_table_bull_by_feps[16,5]<-chi_squared_raw_returns_bull_quartile_four_feps[3]
+
+write.csv(raw_return_regression_coeff_table_bull_by_feps,"raw_return_regression_coeff_table_bull_by_feps.csv")
+write.csv(raw_return_regression_t_stat_table_bull_by_feps,"raw_return_regression_t_stat_table_bull_by_feps.csv")
+write.csv(raw_return_regression_p_stat_table_bull_by_feps,"raw_return_regression_p_stat_table_bull_by_feps.csv")
 ```
 =================================================================================================================================================================================================================================
 George Asks
