@@ -256,4 +256,10 @@ head(NASDAQ_data_with_beta_portfolio_returns)
 crsp_data_with_beta_portfolio_returns<-rbind(AMEX_data_with_beta_portfolio_returns,NASDAQ_data_with_beta_portfolio_returns)
 write.csv(crsp_data_with_beta_portfolio_returns,"crsp_data_with_beta_portfolio_returns.csv")
 ```
+# Write the parts that we need 
+```{r}
+col_order<-c("date","year", "month", "permno","benchmark_returns","excess_returns")
+crsp_data_with_beta_portfolio_returns<-crsp_data_with_beta_portfolio_returns[,col_order]
+write.csv(crsp_data_with_beta_portfolio_returns,"crsp_data_with_beta_portfolio_returns_export.csv")
+```
 
