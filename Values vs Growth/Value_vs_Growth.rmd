@@ -1,0 +1,553 @@
+---
+title: "George New Project"
+output: html_notebook
+---
+
+```{r}
+library(RPostgres)
+wrds <- dbConnect(Postgres(),
+                  host='wrds-pgdata.wharton.upenn.edu',
+                  port=9737,
+                  dbname='wrds',
+                  sslmode='require',
+                  user='echoi98')
+library(tidyverse)
+library(dbplyr)
+```
+Pull in the companies from crsp to IBES link 
+```{r}
+link_tool_v1<-read.csv("crsp_ibes_link.csv",header = TRUE)
+link_tool_v1<- link_tool_v1%>%filter(SCORE!=6)
+link_tool_ticker <- subset(link_tool_v1, select = c('TICKER','NCUSIP','PERMNO'))
+```
+Compu stat pull
+```{r}
+res <- dbSendQuery(wrds, "select gvkey, datadate, conm,cusip, fyr, fyear, exchg, bkvlps, epsfx, fic from comp.funda
+                   where
+                   fyr = '12' and 
+                   exchg <> 0 and 
+                   exchg <> 1 and
+                   exchg <> 19 and
+                   popsrc = 'D' and 
+                   consol = 'C' and 
+                   datafmt = 'STD'")
+compustat_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+head(compustat_data)
+```
+# Clean Compustat Data
+```{r}
+compustat_data_v1<-compustat_data
+compustat_data_v1<- compustat_data_v1%>%drop_na(bkvlps)
+```
+# Grab the Security files for compustat for us first
+```{r}
+res <- dbSendQuery(wrds, "select gvkey, ibtic from comp.security")
+compustat_security_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+```
+# Take out any NA's in compustat security
+```{r}
+compustat_security_data_v1<-compustat_security_data
+compustat_security_data_v1<- compustat_security_data_v1%>%drop_na(ibtic)
+head(compustat_security_data_v1)
+```
+# Grab the Security files for compustat for global first
+```{r}
+res <- dbSendQuery(wrds, "select gvkey, ibtic from comp.g_security")
+compustat_global_security_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+```
+# Take out any NA's in  global compustat security
+```{r}
+compustat_global_security_data_v1<-compustat_global_security_data
+compustat_global_security_data_v1<- compustat_global_security_data_v1%>%drop_na(ibtic)
+head(compustat_global_security_data_v1)
+```
+# Merge both global and NA compustat to ibes link
+```{r}
+compustat_link_to_IBES<-rbind(compustat_security_data_v1, compustat_global_security_data_v1)
+head(compustat_link_to_IBES)
+```
+# Now merge this with the original compustat data to have the link to IBES
+```{r}
+compustat_data_v2<- inner_join(compustat_data_v1, compustat_link_to_IBES, by =c('gvkey'='gvkey'))
+compustat_data_v2<-compustat_data_v2%>%group_by(gvkey)
+compustat_data_v2
+```
+# Now only include companies that are tracked by both IBES and CRSP using the link tool
+```{r}
+compustat_data_v3 <- inner_join(compustat_data_v2, link_tool_ticker, by = c('ibtic'='TICKER'))
+compustat_data_v3
+```
+# Save this data to an excel 
+```{r}
+write.csv(compustat_data_v3,"compustat_data_vf.csv")
+```
+##################################################################################################################################################################################################################################
+IBES pull
+##################################################################################################################################################################################################################################
+Pull International IBES Summary Data
+```{r}
+res <- dbSendQuery(wrds, "select ticker, cusip,cname,fiscalp,statpers,actual, anndats_act, actdats_act,numest,meanest, medest,fpedats,usfirm, fpi from ibes.NSTATSUM_EPSINT
+                   where fiscalp = 'ANN' 
+                   ")
+ibes_int_stat_sum_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+head(ibes_int_stat_sum_data)
+```
+Pull US IBES Summary Data
+```{r}
+res <- dbSendQuery(wrds, "select ticker, cusip,cname,fiscalp,statpers,actual, anndats_act, actdats_act,numest,meanest, medest,fpedats,usfirm,fpi from ibes.NSTATSUM_EPSUs
+                   where fiscalp = 'ANN' and 
+                   numest >=1
+                   ")
+ibes_US_stat_sum_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+head(ibes_US_stat_sum_data)
+```
+Merger both ibes together
+```{r}
+complete_ibes_data<-rbind(ibes_int_stat_sum_data, ibes_US_stat_sum_data)
+head(complete_ibes_data)
+```
+Rename the columns 
+```{r}
+complete_ibes_data_v1<-complete_ibes_data
+complete_ibes_data_v1<-rename(complete_ibes_data_v1,forecast_date=statpers, actual_earnings=actual, forecasted_period=fpedats)
+complete_ibes_data_v1<-complete_ibes_data_v1%>%group_by(ticker)
+complete_ibes_data_v1
+```
+Only get fiscal year 12 end, forecast period of 1 (FPI) and take out nas 
+```{r}
+complete_ibes_data_v2<-complete_ibes_data_v1
+# Month where the analyst forecasted
+complete_ibes_data_v2$fiscal_year_end_month <- format(complete_ibes_data_v2$forecasted_period,"%m")
+complete_ibes_data_v2<-complete_ibes_data_v2%>%filter(fiscal_year_end_month==12)
+complete_ibes_data_v2<-complete_ibes_data_v2%>% filter(fpi==1)
+complete_ibes_data_v2<-complete_ibes_data_v2%>% drop_na(actual_earnings)
+```
+Find the largest forecast date for any given forecast year 
+```{r}
+largest_forecast_date_max <- complete_ibes_data_v2%>%group_by(ticker,forecasted_period)%>%summarise(max=max(forecast_date))
+largest_forecast_date_min <- complete_ibes_data_v2%>%group_by(ticker,forecasted_period)%>%summarise(min=min(forecast_date))
+largest_forecast_date_max
+largest_forecast_date_min
+```
+Create IBES consensus forecast database
+```{r}
+ibes_forecast_first_forecast<-inner_join(complete_ibes_data_v2,largest_forecast_date_min,by=c('ticker'='ticker','forecasted_period'='forecasted_period','forecast_date'='min'))
+ibes_forecast_last_forecast<-inner_join(complete_ibes_data_v2,largest_forecast_date_max,by=c('ticker'='ticker','forecasted_period'='forecasted_period','forecast_date'='max'))
+ibes_forecast_first_forecast
+ibes_forecast_last_forecast
+```
+# Column comparison of beat or loss
+```{r}
+# Using Mean Estimates for the first earnings forecast date recorded
+ibes_forecast_first_forecast$above_expectations_mean<-0
+ibes_forecast_first_forecast$below_expectations_mean <-0
+ibes_forecast_first_forecast$above_expectations_mean[ibes_forecast_first_forecast$actual_earnings>ibes_forecast_first_forecast$meanest]<-1
+ibes_forecast_first_forecast$below_expectations_mean[ibes_forecast_first_forecast$above_expectations_mean==0]<-1
+
+# Using Median Estimates for the first earnings forecast date recorded
+ibes_forecast_first_forecast$above_expectations_median<-0
+ibes_forecast_first_forecast$below_expectations_median <-0
+ibes_forecast_first_forecast$above_expectations_median[ibes_forecast_first_forecast$actual_earnings>ibes_forecast_first_forecast$medest]<-1
+ibes_forecast_first_forecast$below_expectations_median[ibes_forecast_first_forecast$above_expectations_median==0]<-1
+
+# Using Mean Estimates for the last earnings forecast date recorded
+ibes_forecast_last_forecast$above_expectations_mean<-0
+ibes_forecast_last_forecast$below_expectations_mean <-0
+ibes_forecast_last_forecast$above_expectations_mean[ibes_forecast_last_forecast$actual_earnings>ibes_forecast_last_forecast$meanest]<-1
+ibes_forecast_last_forecast$below_expectations_mean[ibes_forecast_last_forecast$above_expectations_mean==0]<-1
+
+# Using Median Estimates for the last earnings forecast date recorded
+ibes_forecast_last_forecast$above_expectations_median<-0
+ibes_forecast_last_forecast$below_expectations_median <-0
+ibes_forecast_last_forecast$above_expectations_median[ibes_forecast_last_forecast$actual_earnings>ibes_forecast_last_forecast$medest]<-1
+ibes_forecast_last_forecast$below_expectations_median[ibes_forecast_last_forecast$above_expectations_median==0]<-1
+
+ibes_forecast_first_forecast
+ibes_forecast_last_forecast
+```
+# Now we must link back to the ticker set we are using
+```{r}
+ibes_forecast_first_forecast_linked<-inner_join(ibes_forecast_first_forecast,link_tool_ticker, by = c('ticker'='TICKER'))
+ibes_forecast_last_forecast_linked<-inner_join(ibes_forecast_last_forecast,link_tool_ticker, by = c('ticker'='TICKER'))
+ibes_forecast_first_forecast_linked
+ibes_forecast_last_forecast_linked
+```
+# Save these IBES forecasts 
+```{r}
+write.csv(ibes_forecast_first_forecast_linked,"ibes_forecast_first_forecast_linked.csv")
+write.csv(ibes_forecast_last_forecast_linked,"ibes_forecast_last_forecast_linked.csv")
+```
+##################################################################################################################################################################################################################################
+CRSP data
+##################################################################################################################################################################################################################################
+```{r}
+# hexcd 1 = NYSE, hexcd 2 = AMEX, hexcd 3 = NASDAQ 
+res <- dbSendQuery(wrds, "select date,permno,cusip,prc, ret, vol, shrout ,hexcd, cfacpr from crspa.msf
+                   where prc >0")
+crsp_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+```
+# Adjust the price and omit nas
+```{r}
+col_order <- c("date","year", "month", "permno","cusip", "price","monthly_returns","volume","shares_outstanding","market_capitalization","exchange")
+# Omit all rows with incomplete data
+crsp_data_v1<-crsp_data%>%drop_na(cfacpr,vol,prc,shrout,ret)
+# Adjust Price by price adjustment factor 
+crsp_data_v1$prc <- abs(crsp_data_v1$prc)/crsp_data_v1$cfacpr
+head(crsp_data_v1)
+```
+# Match this to crsp link
+```{r}
+crsp_data_v2<- inner_join(crsp_data_v1, link_tool_ticker,by=c('permno'='PERMNO'))
+head(crsp_data_v2)
+```
+# Get price as of the last day of april 
+```{r}
+crsp_data_v3<-crsp_data_v2
+crsp_data_v3$price_month <- format(crsp_data_v3$date,"%m")
+crsp_data_v3<-crsp_data_v3%>%filter(price_month=='04')
+head(crsp_data_v3)
+```
+# Screen to only get one entry per permno per date 
+```{r}
+crsp_data_v4<-crsp_data_v3
+crsp_data_v4<-crsp_data_v4%>%distinct(permno,date,.keep_all = TRUE)
+crsp_data_v4<-crsp_data_v4%>%group_by(permno)
+crsp_data_v4
+```
+# save this csv
+```{r}
+write.csv(crsp_data_v4, "crsp_data_vf.csv")
+```
+##################################################################################################################################################################################################################################
+Now we want to merge the three databases to form our quartiles
+##################################################################################################################################################################################################################################
+```{r}
+compustat_data<-read.csv("compustat_data_vf.csv",header = TRUE)
+crsp_data<-read.csv("crsp_data_vf.csv",header = TRUE)
+IBES_data<-read.csv("ibes_forecast_last_forecast_linked.csv", header=TRUE)
+compustat_data<-compustat_data%>%group_by(gvkey)
+crsp_data<-crsp_data%>%group_by(permno)
+IBES_data<-IBES_data%>%group_by(ticker)
+compustat_data
+crsp_data
+IBES_data
+```
+# Get only the columns we want from each table 
+```{r}
+# Take the columsn we need
+columns<-c('fyear','ibtic','NCUSIP','PERMNO','bkvlps','epsfx')
+modified_compustat_data<-compustat_data[,columns]
+columns<-c('date','permno','prc','TICKER')
+modified_crsp_data<-crsp_data[,columns]
+columns<-c('ticker','PERMNO','cname','forecast_date','actual_earnings','forecasted_period','above_expectations_mean','above_expectations_median','below_expectations_mean','below_expectations_median','numest')
+modified_ibes_data<-IBES_data[,columns]
+modified_compustat_data
+modified_crsp_data
+modified_ibes_data
+```
+# Get the fiscl year prior 
+```{r}
+modified_crsp_data$date<-as.Date(modified_crsp_data$date)
+modified_crsp_data$year<- format(modified_crsp_data$date,"%Y")
+modified_crsp_data$year<-as.numeric(modified_crsp_data$year)
+modified_crsp_data$previous_year<-modified_crsp_data$year-1
+columns<-c('permno','TICKER','date','prc', 'previous_year')
+modified_crsp_data<-modified_crsp_data[,columns]
+modified_crsp_data
+```
+# Merge Crsp and Compustat
+```{r}
+merged_crsp_compustat<-inner_join(modified_compustat_data,modified_crsp_data,by=c('PERMNO'='permno', 'ibtic'='TICKER','fyear'='previous_year'))
+merged_crsp_compustat<-merged_crsp_compustat%>%drop_na(epsfx)
+merged_crsp_compustat$PE_Ratio<-merged_crsp_compustat$prc/merged_crsp_compustat$epsfx
+merged_crsp_compustat$PB_Ratio<-merged_crsp_compustat$prc/merged_crsp_compustat$bkvlps
+merged_crsp_compustat
+```
+# Quartile the data on PB and PE
+```{r}
+merged_crsp_compustat<-merged_crsp_compustat%>%group_by(fyear)%>%mutate(quartile_PE_ratio=ntile(PE_Ratio,4))
+merged_crsp_compustat<-merged_crsp_compustat%>%group_by(fyear)%>%mutate(quartile_PB_ratio=ntile(PB_Ratio,4))
+# Take only the top and bottom quartiles
+merged_crsp_compustat<-merged_crsp_compustat%>%filter(quartile_PE_ratio==4|quartile_PE_ratio==1|quartile_PB_ratio==4|quartile_PB_ratio==1)
+# Set up dummies if Price to book value 
+merged_crsp_compustat$value_stock_PB<-0
+merged_crsp_compustat$value_stock_PB[merged_crsp_compustat$quartile_PB_ratio==1]<-1
+# Set up dummies if Price to Earnings value 
+merged_crsp_compustat$value_stock_PE<-0
+merged_crsp_compustat$value_stock_PE[merged_crsp_compustat$quartile_PE_ratio==1]<-1
+# Set up dummies if Price to book value 
+merged_crsp_compustat$growth_stock_PB<-1
+merged_crsp_compustat$growth_stock_PB[merged_crsp_compustat$value_stock_PB==1]<-0
+# Set up dummies if Price to book value 
+merged_crsp_compustat$growth_stock_PE<-1
+merged_crsp_compustat$growth_stock_PE[merged_crsp_compustat$value_stock_PE==1]<-0
+merged_crsp_compustat
+```
+# Take the columns we need to prep for merge to ibes
+```{r}
+# Get the columns we need
+columns<-c('ibtic','PERMNO','fyear','date','value_stock_PB','value_stock_PE','growth_stock_PB','growth_stock_PE')
+merged_crsp_compustat_modified<-merged_crsp_compustat[,columns]
+merged_crsp_compustat_modified
+# Prep IBES to get out fiscal year prediction
+modified_ibes_data$forecasted_period<-as.Date(modified_ibes_data$forecasted_period)
+modified_ibes_data$year<- format(modified_ibes_data$forecasted_period,"%Y")
+columns<-c('ticker','PERMNO','year','cname','above_expectations_mean','above_expectations_median','below_expectations_mean','below_expectations_median','numest')
+modified_ibes_data<-modified_ibes_data[,columns]
+modified_ibes_data
+```
+# Merge to ibes
+```{r}
+# Covert char to numeric
+modified_ibes_data$year<-as.numeric(modified_ibes_data$year)
+consolidated_crsp_compustat_ibes<-inner_join(merged_crsp_compustat_modified,modified_ibes_data, by = c('fyear'='year','ibtic'='ticker','PERMNO'='PERMNO'))
+consolidated_crsp_compustat_ibes<-consolidated_crsp_compustat_ibes%>%distinct(ibtic,PERMNO,fyear,date,.keep_all=TRUE)
+consolidated_crsp_compustat_ibes
+```
+# Organize and clean the database
+```{r}
+columns<-c('ibtic','PERMNO','cname','fyear','date','value_stock_PB','value_stock_PE','growth_stock_PB','growth_stock_PE','above_expectations_median','below_expectations_mean','below_expectations_median')
+consolidated_crsp_compustat_ibes_vf<-consolidated_crsp_compustat_ibes
+consolidated_crsp_compustat_ibes_vf<-consolidated_crsp_compustat_ibes_vf[,columns]
+consolidated_crsp_compustat_ibes_vf<-rename(consolidated_crsp_compustat_ibes_vf,IBES_Ticker_ID=ibtic, CRSP_Permno_ID=PERMNO,Fiscal_Year=fyear,Stock_Price_Date=date,Company_Name=cname)
+consolidated_crsp_compustat_ibes_vf
+```
+# Save the consolidate data
+```{r}
+write.csv(consolidated_crsp_compustat_ibes_vf,"consolidated_crsp_compustat_ibes_vf.csv")
+```
+##################################################################################################################################################################################################################################
+Now we want to get 90 day return and then one year return on the stock 
+##################################################################################################################################################################################################################################
+```{r}
+columns<-c('IBES_Ticker_ID','CRSP_Permno_ID','Company_Name','Fiscal_Year','Stock_Price_Date')
+forward_dates<-consolidated_crsp_compustat_ibes_vf[,columns]
+forward_dates$date_add_90<-forward_dates$Stock_Price_Date+90
+forward_dates$date_add_one_year<-forward_dates$Stock_Price_Date+365
+forward_dates$quarter_month<-format(forward_dates$date_add_90,"%m")
+forward_dates$quarter_year<-format(forward_dates$date_add_90,"%Y")
+forward_dates$future_month<-format(forward_dates$date_add_one_year,"%m")
+forward_dates$future_year<-format(forward_dates$date_add_one_year,"%Y")
+forward_dates
+```
+#Get the crsp price data again 
+```{r}
+# hexcd 1 = NYSE, hexcd 2 = AMEX, hexcd 3 = NASDAQ 
+res <- dbSendQuery(wrds, "select date,permno,prc, cfacpr from crspa.msf
+                   where prc >0")
+crsp_price_data <- dbFetch(res, n=-1)
+dbClearResult(res)
+head(crsp_price_data)
+```
+# Now we only wnat to keep price that are relevant 
+```{r}
+crsp_price_data_v1<-crsp_price_data
+crsp_price_data_v1<-crsp_price_data_v1%>%group_by(permno)
+crsp_price_data_v1<-crsp_price_data_v1%>%drop_na(prc)
+# Modify the price
+crsp_price_data_v1$prc <- abs(crsp_price_data_v1$prc)/crsp_price_data_v1$cfacpr
+# Break out the date 
+crsp_price_data_v1$month<-format(crsp_price_data_v1$date,"%m")
+crsp_price_data_v1$year<-format(crsp_price_data_v1$date,"%Y")
+crsp_price_data_v1
+```
+# Clean up both sets
+```{r}
+# Clean up pulled crsp data
+columns<-c('date','permno','prc','month','year')
+crsp_price_data_v2<-crsp_price_data_v1[,columns]
+# Partition forward dates table
+columns<-c('CRSP_Permno_ID','Stock_Price_Date','quarter_month','quarter_year','future_month','future_year')
+forward_dates_v2<-forward_dates[,columns]
+crsp_price_data_v2
+forward_dates_v2
+```
+# Join to get full data 
+```{r}
+original_security_price<-inner_join(forward_dates_v2,crsp_price_data_v2,by=c('CRSP_Permno_ID'='permno','Stock_Price_Date'='date'))
+columns<-c('CRSP_Permno_ID','Stock_Price_Date','prc')
+original_security_price<-original_security_price[,columns]
+
+future_quarter_security_price<-inner_join(forward_dates_v2,crsp_price_data_v2,by=c('CRSP_Permno_ID'='permno','quarter_month'='month','quarter_year'='year'))
+columns<-c('CRSP_Permno_ID','Stock_Price_Date','prc')
+future_quarter_security_price<-future_quarter_security_price[,columns]
+future_quarter_security_price<-rename(future_quarter_security_price,quarter_after_price=prc)
+
+future_year_security_price<-inner_join(forward_dates_v2,crsp_price_data_v2,by=c('CRSP_Permno_ID'='permno','future_month'='month','future_year'='year'))
+columns<-c('CRSP_Permno_ID','Stock_Price_Date','prc')
+future_year_security_price<-future_year_security_price[,columns]
+future_year_security_price<-rename(future_year_security_price,year_after_price=prc)
+
+original_security_price
+future_quarter_security_price
+future_year_security_price
+```
+# Join to get all of these price data together
+```{r}
+consolidated_pricing_data<-inner_join(original_security_price, future_quarter_security_price,by=c('CRSP_Permno_ID'='CRSP_Permno_ID','Stock_Price_Date'='Stock_Price_Date'))
+consolidated_pricing_data<-inner_join(consolidated_pricing_data, future_year_security_price,by=c('CRSP_Permno_ID'='CRSP_Permno_ID','Stock_Price_Date'='Stock_Price_Date'))
+consolidated_pricing_data$quarter_after_return<-consolidated_pricing_data$quarter_after_price/consolidated_pricing_data$prc-1
+consolidated_pricing_data$annual_after_return<-consolidated_pricing_data$year_after_price/consolidated_pricing_data$prc-1
+columns<-c("CRSP_Permno_ID","Stock_Price_Date",'quarter_after_return','annual_after_return')
+consolidated_pricing_data<-consolidated_pricing_data[,columns]
+consolidated_pricing_data
+```
+# Save this CSV
+```{r}
+write.csv(consolidated_pricing_data,"consolidated_pricing_data.csv")
+```
+##################################################################################################################################################################################################################################
+Merge Pricing back to our original csv 
+##################################################################################################################################################################################################################################
+```{r}
+consolidated_crsp_compustat_ibes_vf
+consolidated_pricing_data
+consolidated_data_vf<-inner_join(consolidated_crsp_compustat_ibes_vf,consolidated_pricing_data,by=c('CRSP_Permno_ID'='CRSP_Permno_ID','Stock_Price_Date'='Stock_Price_Date'))
+consolidated_data_vf
+```
+# Write this into csv format
+```{r}
+write.csv(consolidated_data_vf,"consolidated_data_vf.csv")
+```
+##################################################################################################################################################################################################################################
+Look at YOY Returns 
+##################################################################################################################################################################################################################################
+```{r}
+consolidated_data_vf<-consolidated_data_vf%>%drop_na(quarter_after_return, annual_after_return)
+consolidated_data_vfs
+```
+# Group by year and value and above by median
+```{r}
+# Using Price to Book
+value_by_price_to_book_perform_above<-consolidated_data_vf%>%filter(value_stock_PB==1 & above_expectations_median==1)
+value_by_price_to_book_perform_below<-consolidated_data_vf%>%filter(value_stock_PB==1 & above_expectations_median==0)
+growth_by_price_to_book_perform_above<-consolidated_data_vf%>%filter(growth_stock_PB==1& above_expectations_median==1)
+growth_by_price_to_book_perform_below<-consolidated_data_vf%>%filter(growth_stock_PB==1 & above_expectations_median==0)
+
+# Using Price to Earnings
+value_by_price_to_earnings_perform_above<-consolidated_data_vf%>%filter(value_stock_PE==1 & above_expectations_median==1)
+value_by_price_to_earnings_perform_below<-consolidated_data_vf%>%filter(value_stock_PE==1 & above_expectations_median==0)
+growth_by_price_to_earnings_perform_above<-consolidated_data_vf%>%filter(growth_stock_PE==1 & above_expectations_median==1)
+growth_by_price_to_earnings_perform_below<-consolidated_data_vf%>%filter(growth_stock_PE==1 & above_expectations_median==0)
+
+#Get the average return per year above, PB value
+value_by_price_to_book_perform_above$average_quaterly_return<-mean(value_by_price_to_book_perform_above$quarter_after_return)
+value_by_price_to_book_perform_above$average_annual_return<-mean(value_by_price_to_book_perform_above$annual_after_return)
+
+#Get the average return per year below, PB value
+value_by_price_to_book_perform_below$average_quaterly_return<-mean(value_by_price_to_book_perform_below$quarter_after_return)
+value_by_price_to_book_perform_below$average_annual_return<-mean(value_by_price_to_book_perform_below$annual_after_return)
+
+
+#Get the average return per year above, PB Growth
+growth_by_price_to_book_perform_above$average_quaterly_return<-mean(growth_by_price_to_book_perform_above$quarter_after_return)
+growth_by_price_to_book_perform_above$average_annual_return<-mean(growth_by_price_to_book_perform_above$annual_after_return)
+
+#Get the average return per year below, PB Growth
+growth_by_price_to_book_perform_below$average_quaterly_return<-mean(growth_by_price_to_book_perform_below$quarter_after_return)
+growth_by_price_to_book_perform_below$average_annual_return<-mean(growth_by_price_to_book_perform_below$annual_after_return)
+
+#Get the average return per year above, PE value
+value_by_price_to_earnings_perform_above$average_quaterly_return<-mean(value_by_price_to_earnings_perform_above$quarter_after_return)
+value_by_price_to_earnings_perform_above$average_annual_return<-mean(value_by_price_to_earnings_perform_above$annual_after_return)
+
+#Get the average return per year below, PB value
+value_by_price_to_earnings_perform_below$average_quaterly_return<-mean(value_by_price_to_earnings_perform_below$quarter_after_return)
+value_by_price_to_earnings_perform_below$average_annual_return<-mean(value_by_price_to_earnings_perform_below$annual_after_return)
+
+#Get the average return per year above, PB Growth
+growth_by_price_to_earnings_perform_above$average_quaterly_return<-mean(growth_by_price_to_earnings_perform_above$quarter_after_return)
+growth_by_price_to_earnings_perform_above$average_annual_return<-mean(growth_by_price_to_earnings_perform_above$annual_after_return)
+
+#Get the average return per year below, PB Growth
+growth_by_price_to_earnings_perform_below$average_quaterly_return<-mean(growth_by_price_to_earnings_perform_below$quarter_after_return)
+growth_by_price_to_earnings_perform_below$average_annual_return<-mean(growth_by_price_to_earnings_perform_below$annual_after_return)
+
+#Output Results P/B
+value_by_price_to_book_perform_above
+value_by_price_to_book_perform_below
+growth_by_price_to_book_perform_above
+growth_by_price_to_book_perform_below
+
+#Output Results P/E
+value_by_price_to_earnings_perform_above
+value_by_price_to_earnings_perform_below
+growth_by_price_to_earnings_perform_above
+growth_by_price_to_earnings_perform_below
+```
+# Concat this to get just one value 
+```{r}
+value_by_price_to_book_perform_above_summary<-value_by_price_to_book_perform_above%>%distinct(Fiscal_Year,.keep_all = TRUE)
+value_by_price_to_book_perform_below_summary<-value_by_price_to_book_perform_below%>%distinct(Fiscal_Year,.keep_all = TRUE)
+growth_by_price_to_book_perform_above_summary<-growth_by_price_to_book_perform_above%>%distinct(Fiscal_Year,.keep_all = TRUE)
+growth_by_price_to_book_perform_below_summary<-growth_by_price_to_book_perform_below%>%distinct(Fiscal_Year,.keep_all = TRUE)
+
+value_by_price_to_book_perform_above_summary<-arrange(value_by_price_to_book_perform_above_summary,Fiscal_Year)
+value_by_price_to_book_perform_below_summary<-arrange(value_by_price_to_book_perform_below_summary,Fiscal_Year)
+growth_by_price_to_book_perform_above_summary<-arrange(growth_by_price_to_book_perform_above_summary,Fiscal_Year)
+growth_by_price_to_book_perform_below_summary<-arrange(growth_by_price_to_book_perform_below_summary,Fiscal_Year)
+
+aggregate_price_to_book<-rbind(value_by_price_to_book_perform_above_summary,value_by_price_to_book_perform_below_summary,growth_by_price_to_book_perform_above_summary,growth_by_price_to_book_perform_below_summary)
+aggregate_price_to_book<-aggregate_price_to_book%>%group_by(Fiscal_Year)
+aggregate_price_to_book<-arrange(aggregate_price_to_book,Fiscal_Year)
+
+value_by_price_to_book_perform_above_summary
+
+```
+# Concat this to get just one value 
+```{r}
+value_by_price_to_earnings_perform_above_summary<-value_by_price_to_earnings_perform_above%>%distinct(Fiscal_Year,.keep_all = TRUE)
+value_by_price_to_earnings_perform_below_summary<-value_by_price_to_earnings_perform_below%>%distinct(Fiscal_Year,.keep_all = TRUE)
+growth_by_price_to_earnings_perform_above_summary<-growth_by_price_to_earnings_perform_above%>%distinct(Fiscal_Year,.keep_all = TRUE)
+growth_by_price_to_earnings_perform_below_summary<-growth_by_price_to_earnings_perform_below%>%distinct(Fiscal_Year,.keep_all = TRUE)
+
+value_by_price_to_earnings_perform_above_summary<-arrange(value_by_price_to_earnings_perform_above_summary,Fiscal_Year)
+value_by_price_to_earnings_perform_below_summary<-arrange(value_by_price_to_earnings_perform_below_summary,Fiscal_Year)
+growth_by_price_to_earnings_perform_above_summary<-arrange(growth_by_price_to_earnings_perform_above_summary,Fiscal_Year)
+growth_by_price_to_earnings_perform_below_summary<-arrange(growth_by_price_to_earnings_perform_below_summary,Fiscal_Year)
+
+aggregate_price_to_earnings<-rbind(value_by_price_to_earnings_perform_above_summary,value_by_price_to_earnings_perform_below_summary,growth_by_price_to_earnings_perform_above_summary,growth_by_price_to_earnings_perform_below_summary)
+aggregate_price_to_earnings<-aggregate_price_to_earnings%>%group_by(Fiscal_Year)
+aggregate_price_to_earnings<-arrange(aggregate_price_to_earnings,Fiscal_Year)
+aggregate_price_to_earnings
+```
+# Make a for aggregate returns given price to earnings
+```{r}
+aggregate_price_to_earnings$type_of_security_PB<-"NA"
+aggregate_price_to_earnings$type_of_security_PB[aggregate_price_to_earnings$value_stock_PB==1&aggregate_price_to_earnings$above_expectations_median==1]<-"Value Stock Above Expectations"
+aggregate_price_to_earnings$type_of_security_PB[aggregate_price_to_earnings$value_stock_PB==1&aggregate_price_to_earnings$above_expectations_median==0]<-"Value Stock Below Expectations"
+aggregate_price_to_earnings$type_of_security_PB[aggregate_price_to_earnings$growth_stock_PB==1&aggregate_price_to_earnings$above_expectations_median==1]<-"Growth Stock Above Expectations"
+aggregate_price_to_earnings$type_of_security_PB[aggregate_price_to_earnings$growth_stock_PB==1&aggregate_price_to_earnings$above_expectations_median==0]<-"Growth Stock Below Expectations"
+
+aggregate_price_to_earnings$type_of_security_PE<-"NA"
+aggregate_price_to_earnings$type_of_security_PE[aggregate_price_to_earnings$value_stock_PE==1&aggregate_price_to_earnings$above_expectations_median==1]<-"Value Stock Above Expectations"
+aggregate_price_to_earnings$type_of_security_PE[aggregate_price_to_earnings$growth_stock_PE==1&aggregate_price_to_earnings$above_expectations_median==1]<-"Growth Stock Above Expectations"
+aggregate_price_to_earnings$type_of_security_PE[aggregate_price_to_earnings$value_stock_PE==1&aggregate_price_to_earnings$above_expectations_median==0]<-"Value Stock Below Expectations"
+aggregate_price_to_earnings$type_of_security_PE[aggregate_price_to_earnings$growth_stock_PE==1&aggregate_price_to_earnings$above_expectations_median==0]<-"Growth Stock Below Expectations"
+```
+# Mutate the data so we can work with it 
+```{r}
+columns<-c('Fiscal_Year','quarter_after_return','annual_after_return','type_of_security_PB','type_of_security_PE')
+aggregate_price_to_earnings_v1<-aggregate_price_to_earnings[,columns]
+aggregate_price_to_earnings_v1
+```
+#Write into Excel
+```{r}
+write.csv(value_by_price_to_book_perform_above_summary,"value_by_price_to_book_perform_above_summary.csv")
+write.csv(value_by_price_to_book_perform_below_summary,"value_by_price_to_book_perform_below_summary.csv")
+write.csv(growth_by_price_to_book_perform_above_summary,"growth_by_price_to_book_perform_above_summary.csv")
+write.csv(growth_by_price_to_book_perform_below_summary,"growth_by_price_to_book_perform_below_summary.csv")
+
+write.csv(value_by_price_to_earnings_perform_above_summary,"value_by_price_to_earnings_perform_above_summary.csv")
+write.csv(value_by_price_to_earnings_perform_below_summary,"value_by_price_to_earnings_perform_below_summary.csv")
+write.csv(growth_by_price_to_earnings_perform_above_summary,"growth_by_price_to_earnings_perform_above_summary.csv")
+write.csv(growth_by_price_to_earnings_perform_below_summary,"growth_by_price_to_earnings_perform_below_summary.csv")
+
+```
+
